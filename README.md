@@ -36,12 +36,11 @@ Update your operating system on your target servers before deploying;
 
 Patroni hosts must be joined to Active Directory Domain, if DNS authentication required.
 
-
-
 - **PostgreSQL prerequisites**: 
+
 For any virtual IP based solutions to work in general with Postgres you need to make sure that it is configured to automatically scan and bind to all found network interfaces. So something like * or 0.0.0.0 (IPv4 only) is needed for the listen_addresses parameter to activate the automatic binding. This again might not be suitable for all use cases where security is paramount for example.
 
-Nonlocal bind.
+Nonlocal bind.  
 If you can't set listen_addresses to a wildcard address, you can explicitly specify only those adresses that you want to listen to. However, if you add the virtual IP to those addresses, PostgreSQL will fail to start when that address is not yet registered on one of the interfaces of the machine. You need to configure the kernel to allow "nonlocal bind" of IP (v4) addresses:
 - temporarily:
 ```
