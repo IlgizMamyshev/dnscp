@@ -100,16 +100,16 @@ sudo mv /home/user/scripts/dnscp.sh /etc/patroni/dnscp.sh && sudo chmod ugo+x /e
 ```VIP1="172.16.10.111"``` 
 - VIP in DataCenter 2:
 ```VIP2="172.16.20.111"``` 
-- Virtual Computer Name - Client Access Point:
+- Virtual Computer Name - Client Access Point:  
 ```VCompName="pgsql"```
-- Virtual Computer Name account in Active Directory:
-   for authenticated access on the DNS server
-   ```VCompPassword="P@ssw0rd"```
-   for anonimous access on the DNS server:
+- Virtual Computer Name account in Active Directory:  
+   for authenticated access on the DNS server:  
+   ```VCompPassword="P@ssw0rd"```  
+   for anonimous access on the DNS server:  
    ```VCompPassword=""```
-- AD Domain FQDN (empty is recommended for automatically detect):
+- AD Domain FQDN (empty is recommended for automatically detect):  
 ```DNSzoneFQDN=""```
-- DNS Server FQDN or IP (empty is recommended for automatically detect) (used for register DNS name):
+- DNS Server FQDN or IP (empty is recommended for automatically detect) (used for register DNS name):  
 ```DNSserver=""```
 
 See the [dnscp.sh](./dnscp.sh) file for more details.
