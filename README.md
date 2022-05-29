@@ -134,7 +134,7 @@ Licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ## Author
 Ilgiz Mamyshev (Microsoft SQL Server, PostgreSQL DBA) \
-https://imamyshev.wordpress.com \
+https://imamyshev.wordpress.com
 
 ## Feedback, bug-reports, requests, ...
 Are [welcome](https://github.com/IlgizMamyshev/dnscp/issues)!
