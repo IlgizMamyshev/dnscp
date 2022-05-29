@@ -36,7 +36,7 @@ Update your operating system on your target servers before deploying;
 
 Patroni hosts must be joined to Active Directory Domain, if DNS authentication required.
 
-- **PostgreSQL prerequisites**: 
+- **PostgreSQL**: 
 
 For any virtual IP based solutions to work in general with Postgres you need to make sure that it is configured to automatically scan and bind to all found network interfaces. So something like * or 0.0.0.0 (IPv4 only) is needed for the listen_addresses parameter to activate the automatic binding. This again might not be suitable for all use cases where security is paramount for example.
 
@@ -57,7 +57,7 @@ sysctl -p
 ## Deployment: quick start
 0. Before
 Patroni cluster must be deployed
-###### Example: For example use this playbook https://github.com/vitabaks/postgresql_cluster.git
+###### For example use this playbook https://github.com/vitabaks/postgresql_cluster.git
 
 Patroni hosts must be joined to Active Directory Domain, if DNS authentication required, otherwise, anonymous access to the DNS server is used.
 ###### Example: Join Astra Linux to Active Directory https://wiki.astralinux.ru/pages/viewpage.action?pageId=27361515
@@ -91,7 +91,7 @@ If anonymous authentication is used to access the DNS server, there is no need t
 
 4. Put script to "/etc/patroni/dnscp.sh" and set executable (adds the execute permission for all users to the existing permissions):
 ```
-sudo mv /home/user/scripts/dnscp.sh /etc/patroni/dnscp.sh && sudo chmod ugo+x /etc/patroni/dnscp.sh
+sudo chmod ugo+x /etc/patroni/dnscp.sh
 ```
 
 5. Variables
@@ -133,8 +133,8 @@ sudo /etc/patroni/dnscp.sh on_role_change master patroniclustername
 Licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ## Author
-Ilgiz Mamyshev (PostgreSQL DBA) \
-mamyshev@outlook.com
+Ilgiz Mamyshev (Microsoft SQL Server, PostgreSQL DBA) \
+https://imamyshev.wordpress.com \
 
 ## Feedback, bug-reports, requests, ...
 Are [welcome](https://github.com/IlgizMamyshev/dnscp/issues)!
