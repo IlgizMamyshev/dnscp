@@ -1,6 +1,6 @@
 # DNS Connection Point (for Patroni)
 
-![GitHub stars](https://img.shields.io/github/stars/vitabaks/postgresql_cluster)
+![GitHub stars](https://img.shields.io/github/stars/IlgizMamyshev/dnscp)
 
 ---
 
