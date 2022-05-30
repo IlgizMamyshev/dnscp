@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# v.30.05.2022
 # Copyright © 2022 Ilgiz Mamyshev https://github.com/IlgizMamyshev
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -8,7 +7,7 @@
 #
 # Thanks for the help Nikolay Mishchenko https://github.com/NickNeoOne
 
-### Script for multi-site Patroni clusters (version 27.05.2022)
+### Script for multi-site Patroni clusters (version 30.05.2022)
 # * Uses Patroni callback
 # * VIP addresses can be from different subnets - one VIP address per subnet.
 # * Microsoft DNS Server and Active Directory Domain Services needed
