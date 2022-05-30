@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# v.29.05.2022
+# v.30.05.2022
 # Copyright © 2022 Ilgiz Mamyshev https://github.com/IlgizMamyshev
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -100,7 +100,7 @@ if [[ ! -z $VCompPassword ]] && [[ "" != "$(dpkg-query -W --showformat='${Status
     else
         MSG="[$LOGHEADER] Check prerequisites: Not joined to Active Directory Domain."
         echo $MSG
-		#logger $MSG
+        #logger $MSG
         exit 1; # Exit with error
     fi
     # $VCompPassword is empty. Script configured for non-secure DNS update.
@@ -127,7 +127,7 @@ else
 fi
 
 if [[ "" == "$DNSzoneFQDN" ]] || [[ "" == "$DNSserver" ]] || [[ "" == "$VCompName" ]]; then
-    MSG="[$LOGHEADER] Check prerequisites: DNS server not detected or VCompName is empty."
+    MSG="[$LOGHEADER] Check prerequisites: DNS server or VCompName not set."
     echo $MSG
     #logger $MSG
     exit 1; # Exit with error
@@ -208,20 +208,20 @@ PREFIX=$(echo $NETWORK | awk -F"/" '{print $2}')
 # Check witch IP is in network range
 #####################################################
 for IP in $VIP1 $VIP2; do
-    (( $(in_subnet "$NETWORK" "$IP") )) && VIP=$IP
+	(( $(in_subnet "$NETWORK" "$IP") )) && VIP=$IP
 done
 
 if [[ -z $VIP ]]; then
 	MSG="[$LOGHEADER] WARNING: No suitable VIP ($VIP1, $VIP2) for $NETWORK"
 	echo $MSG
-    #logger $MSG
+	#logger $MSG
 else
-    #####################################################
+	#####################################################
 	# VIP
 	#####################################################
-    MSG="[$LOGHEADER] INFO: VIP $VIP is candidate for current network"
-    echo $MSG
-    #logger $MSG
+	MSG="[$LOGHEADER] INFO: VIP $VIP is candidate for current network"
+	echo $MSG
+	#logger $MSG
 	case $CB_NAME in
 		on_stop )
 			#####################################################
@@ -230,19 +230,19 @@ else
 			if [[ ! -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
 				sudo ip address del $VIP/$PREFIX dev $IFNAME;
 				EXITCODE=$?;
-                if [[ $EXITCODE -eq 0 ]]; then
-                    MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
-                    echo $MSG
-                    #logger $MSG
-                else
-                    MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
-                    echo $MSG
-                    #logger $MSG
-                fi
+				if [[ $EXITCODE -eq 0 ]]; then
+					MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
+					echo $MSG
+					#logger $MSG
+				else
+					MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+					echo $MSG
+					#logger $MSG
+				fi
 			else
 				MSG="[$LOGHEADER] VIP $VIP not exist, no action required.";
 				#echo $MSG
-                #logger $MSG
+				#logger $MSG
 			fi
 			;;
 		on_start|on_role_change )
@@ -253,66 +253,66 @@ else
 				if [[ -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
 					sudo ip address add $VIP/$PREFIX dev $IFNAME;
 					EXITCODE=$?;
-                    if [[ $EXITCODE -eq 0 ]]; then
-                        MSG="[$LOGHEADER] Adding VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
-                        echo $MSG
-                        #logger $MSG
-                    else
-                        MSG="[$LOGHEADER] Adding VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
-                        echo $MSG
-                        #logger $MSG
-                    fi    
+					if [[ $EXITCODE -eq 0 ]]; then
+						MSG="[$LOGHEADER] Adding VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
+						echo $MSG
+						#logger $MSG
+					else
+						MSG="[$LOGHEADER] Adding VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+						echo $MSG
+						#logger $MSG
+					fi    
 				else
 					MSG="[$LOGHEADER] VIP $VIP already present, no action required.";
 					#echo $MSG
-                    #logger $MSG
+					#logger $MSG
 				fi
 				
 				#####################################################
-                # Register DNS (set in every case)
-                #####################################################
-                # Prepare parameters for nsupdate (operator <<- used for use tab symbols)
-                NSDATA=$(cat <<-EOF
+				# Register DNS (set in every case)
+				#####################################################
+				# Prepare parameters for nsupdate (operator <<- used for use tab symbols)
+				NSDATA=$(cat <<-EOF
 				server $DNSserver
 				zone $DNSzoneFQDN
 				update delete $VCompNameFQDN A
 				update add $VCompNameFQDN $TTL A $VIP
 				send
 				EOF
-                )
-                
-                # Authentication by $VCompName Computer account
-                echo "$VCompPassword" | kinit $VCompName$ >/dev/null && KINITEXITCODE=$?
-                
-                # AddOrUpdateDNSRecord
-                if [[ ! -z $VCompPassword ]] && [[ $KINITEXITCODE -eq 0 ]]; then
-                    # Active Directory authentication under Computer Account is success
-                    # View received Kerberos tickets: klist
-                    nsupdate -g -v <(echo "$NSDATA")
-                    EXITCODE=$?;
-                    if [[ $EXITCODE -eq 0 ]]; then
-                        MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED"
-                        echo $MSG
-                        #logger $MSG
-                    else
-                        MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error code $EXITCODE"
-                        echo $MSG
-                        #logger $MSG
-                    fi
-                else
-                    # Active Directory authentication is failed. Try to non-secure DNS-update.
-                    nsupdate -v <(echo "$NSDATA")
-                    EXITCODE=$?;
-                    if [[ $EXITCODE -eq 0 ]]; then
-                        MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with non-secure DNS update SUCCEEDED"
-                        echo $MSG
-                        #logger $MSG
-                    else
-                        MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with non-secure DNS update FAILED with error code $EXITCODE."
-                        echo $MSG
-                        #logger $MSG
-                    fi
-                fi
+				)
+				
+				# Authentication by $VCompName Computer account
+				echo "$VCompPassword" | kinit $VCompName$ >/dev/null && KINITEXITCODE=$?
+				
+				# AddOrUpdateDNSRecord
+				if [[ ! -z $VCompPassword ]] && [[ $KINITEXITCODE -eq 0 ]]; then
+					# Active Directory authentication under Computer Account is success
+					# View received Kerberos tickets: klist
+					nsupdate -g -v <(echo "$NSDATA")
+					EXITCODE=$?;
+					if [[ $EXITCODE -eq 0 ]]; then
+						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED"
+						echo $MSG
+						#logger $MSG
+					else
+						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error code $EXITCODE"
+						echo $MSG
+						#logger $MSG
+					fi
+				else
+					# Active Directory authentication is failed. Try to non-secure DNS-update.
+					nsupdate -v <(echo "$NSDATA")
+					EXITCODE=$?;
+					if [[ $EXITCODE -eq 0 ]]; then
+						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with non-secure DNS update SUCCEEDED"
+						echo $MSG
+						#logger $MSG
+					else
+						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with non-secure DNS update FAILED with error code $EXITCODE."
+						echo $MSG
+						#logger $MSG
+					fi
+				fi
 			else
 				#####################################################
 				# Remove_service_ip if exists
@@ -321,23 +321,23 @@ else
 					sudo ip address del $VIP/$PREFIX dev $IFNAME;
 					EXITCODE=$?;
 					if [[ $EXITCODE -eq 0 ]]; then
-                        MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
-                        echo $MSG
-                        #logger $MSG
-                    else
-                        MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
-                        echo $MSG
-                        #logger $MSG
-                    fi
+						MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
+						echo $MSG
+						#logger $MSG
+					else
+						MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+						echo $MSG
+						#logger $MSG
+					fi
 				else
-                    MSG="[$LOGHEADER] VIP $VIP not exist, no action required.";
-                    #echo $MSG
-                    #logger $MSG
+					MSG="[$LOGHEADER] VIP $VIP not exist, no action required.";
+					#echo $MSG
+					#logger $MSG
 				fi
 			fi
-		   ;;
+			;;
 	   * )
-		   usage
-		   ;;
+			usage
+			;;
 	esac
 fi
