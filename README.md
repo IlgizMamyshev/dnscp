@@ -4,11 +4,11 @@
 
 ---
 
-### Bash script for multi-site PostgreSQL High-Availability Cluster based on Patroni
+### Bash script for support multi-site PostgreSQL High-Availability Cluster based on Patroni
 
 This script designed for deploying a PostgreSQL high availability cluster on dedicated servers for a production environment.
 The script provides registration of the DNS entry and allows the use of one, two or more virtual addresses located in different networks.
-The script uses the [Patroni](https://github.com/zalando/patroni) callback (https://patroni.readthedocs.io/en/latest/SETTINGS.html) function.
+The script uses the [Patroni](https://github.com/zalando/patroni) [callback](https://patroni.readthedocs.io/en/latest/SETTINGS.html) function.
 
 ###### Script features:
 - Add VIP address to network interface if Patroni start Leader role
@@ -95,10 +95,9 @@ sudo chmod ugo+x /etc/patroni/dnscp.sh
 ```
 
 5. Variables
-- VIP in DataCenter 1:
-```VIP1="172.16.10.111"``` 
-- VIP in DataCenter 2:
-```VIP2="172.16.20.111"``` 
+- One VIP or some VIPs in different subnets (DataCenters):
+```VIPs="172.16.10.10,172.16.20.10,172.16.30.10"``` 
+VIP addresses (IPv4) in different subnets separated by commas. Used for client access to Postgre SQL cluster.
 - Virtual Computer Name - Client Access Point:  
 ```VCompName="pgsql"```
 - Virtual Computer Name account in Active Directory:  
@@ -106,10 +105,12 @@ sudo chmod ugo+x /etc/patroni/dnscp.sh
    ```VCompPassword="P@ssw0rd"```  
    for anonimous access on the DNS server:  
    ```VCompPassword=""```
-- AD Domain FQDN (empty is recommended for automatically detect):  
-```DNSzoneFQDN=""```
-- DNS Server FQDN or IP (empty is recommended for automatically detect) (used for register DNS name):  
-```DNSserver=""```
+- DNS zone FQDN:  
+```DNSzoneFQDN=""```  
+Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Empty for automatically detect.
+- DNS Server FQDN or IP:  
+```DNSserver=""```  
+ Empty is recommended for automatically detect. Used for register DNS name.
 
 See the [dnscp.sh](./dnscp.sh) file for more details.
 
@@ -134,7 +135,7 @@ Licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ## Author
 Ilgiz Mamyshev (Microsoft SQL Server, PostgreSQL DBA) \
-https://imamyshev.wordpress.com
+[https://imamyshev.wordpress.com](https://imamyshev.wordpress.com/2022/05/29/dns-connection-point-for-patroni/)
 
 ## Feedback, bug-reports, requests, ...
 Are [welcome](https://github.com/IlgizMamyshev/dnscp/issues)!
