@@ -8,7 +8,7 @@
 
 This script designed for deploying a PostgreSQL high availability cluster on dedicated servers for a production environment.
 The script provides registration of the DNS entry and allows the use of one, two or more virtual addresses located in different networks.
-The script uses the Patroni (https://github.com/zalando/patroni) callback (https://patroni.readthedocs.io/en/latest/SETTINGS.html) function.
+The script uses the [Patroni](https://github.com/zalando/patroni) callback (https://patroni.readthedocs.io/en/latest/SETTINGS.html) function.
 
 ###### Script features:
 - Add VIP address to network interface if Patroni start Leader role
