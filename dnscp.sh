@@ -7,7 +7,7 @@
 #
 # Thanks for the help Nikolay Mishchenko https://github.com/NickNeoOne
 
-### Script for multi-site Patroni clusters (version 30.05.2022)
+### Script for multi-site Patroni clusters (version 31.05.2022)
 # * Uses Patroni callback
 # * VIP addresses can be from different subnets - one VIP address per subnet.
 # * Microsoft DNS Server and Active Directory Domain Services needed
@@ -56,15 +56,13 @@
 # Common:
 # 	* Install nsupdate utility: sudo apt-get install dnsutils
 
-
 #####################################################
 # Change only this variables
 #####################################################
-readonly VIP1="172.16.10.111" # VIP in DataCenter 1
-readonly VIP2="172.16.20.111" # VIP in DataCenter 2
+readonly VIPs="172.16.10.10,172.16.20.10,172.16.30.10" # VIP addresses (IPv4) in different subnets separated by commas, for client access to databases in the cluster
 readonly VCompName="pgsql" # Virtual Computer Name - Client Access Point
 readonly VCompPassword="P@ssw0rd" # Blank for non-secure update or set password for Virtual Computer Name account in Active Directory
-DNSzoneFQDN="" # Set AD Domain FQDN or empty (recommended for automatically detect).
+DNSzoneFQDN="" # Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Empty for automatically detect.
 
 #####################################################
 # Other variables
@@ -84,32 +82,40 @@ echo $MSG
 #####################################################
 # Check prerequisites
 #####################################################
-##  Active Directory Domain joined? (check inf password is set and astra-winbind command exist)
+## VIPs defined?
+if [[ "" == "$VIPs" ]]; then
+    MSG="[$LOGHEADER] INFO: Check prerequisites: VIPs not defined. Nothing to do."
+    echo $MSG
+    #logger $MSG
+    exit 0; # Exit without error
+fi
+
+## Active Directory Domain joined? (check that the password is set and astra-winbind command exist)
 REQUIRED_PKG="astra-winbind"
 if [[ ! -z $VCompPassword ]] && [[ "" != "$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")" ]]; then
     JOINED_OK=$(astra-winbind -i | awk '{print $NF}')
     if [[ "succeeded" == "$JOINED_OK" ]]; then
-        # detect Domain DNS zone FQDN
+        # Detect DNS zone FQDN
         if [[ "" == "$DNSzoneFQDN" ]]; then
             DNSzoneFQDN=$(astra-winbind -i | awk -F\" '{print $2}' | cut --complement --delimiter "." --fields 1)
-            MSG="[$LOGHEADER] Detected DNS zone FQDN is $DNSzoneFQDN"
-            echo $MSG
+            #MSG="[$LOGHEADER] INFO: Detected DNS zone FQDN is $DNSzoneFQDN"
+            #echo $MSG
             #logger $MSG
         fi
     else
-        MSG="[$LOGHEADER] Check prerequisites: Not joined to Active Directory Domain."
+        MSG="[$LOGHEADER] ERROR: Check prerequisites: Not joined to Active Directory Domain!"
         echo $MSG
         #logger $MSG
-        exit 1; # Exit with error
+    exit 1; # Exit with error
     fi
     # $VCompPassword is empty. Script configured for non-secure DNS update.
 fi
 
-##  package is installed?
+## package is installed?
 REQUIRED_PKG="dnsutils"
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
 if [[ "" == "$PKG_OK" ]]; then
-    MSG="[$LOGHEADER] Check prerequisites: No $REQUIRED_PKG."
+    MSG="[$LOGHEADER] ERROR: Check prerequisites: No $REQUIRED_PKG."
     echo $MSG
     #logger $MSG
     #sudo apt-get --yes install $REQUIRED_PKG #Setting up $REQUIRED_PKG
@@ -119,17 +125,16 @@ else
     if [[ "" == "$DNSserver" ]]; then
         # DNSserver=$(nslookup $(hostname).$DNSzoneFQDN | awk '/Server:/{gsub(/\/.*$/, "", $2); print $2}') # This is Primary DNS on network interface
         DNSserver=$(astra-winbind -i | awk -F\" '{print $2}') # AD DS logon DC
-        MSG="[$LOGHEADER] Detected DNS Server is $DNSserver"
-        echo $MSG
+        #MSG="[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"
+        #echo $MSG
         #logger $MSG
     fi
 fi
 
 if [[ "" == "$DNSzoneFQDN" ]] || [[ "" == "$DNSserver" ]] || [[ "" == "$VCompName" ]]; then
-    MSG="[$LOGHEADER] Check prerequisites: DNS server or VCompName not set."
+    MSG="[$LOGHEADER] INFO: Not all DNS options are set. Only VIPS wil be managed."
     echo $MSG
     #logger $MSG
-    exit 1; # Exit with error
 fi
 
 readonly VCompNameFQDN=$VCompName.$DNSzoneFQDN
@@ -206,40 +211,40 @@ PREFIX=$(echo $NETWORK | awk -F"/" '{print $2}')
 #####################################################
 # Check witch IP is in network range
 #####################################################
-for IP in $VIP1 $VIP2; do
-	(( $(in_subnet "$NETWORK" "$IP") )) && VIP=$IP
+for IP in $(echo $VIPs | awk '{gsub(","," "); print $0}'); do
+    (( $(in_subnet "$NETWORK" "$IP") )) && VIP=$IP
 done
 
 if [[ -z $VIP ]]; then
-	MSG="[$LOGHEADER] WARNING: No suitable VIP ($VIP1, $VIP2) for $NETWORK"
+	MSG="[$LOGHEADER] WARNING: No suitable VIP ($VIPs) for $NETWORK"
 	echo $MSG
-	#logger $MSG
+    #logger $MSG
 else
 	#####################################################
 	# VIP
 	#####################################################
-	MSG="[$LOGHEADER] INFO: VIP $VIP is candidate for current network"
-	echo $MSG
+	#MSG="[$LOGHEADER] INFO: VIP $VIP is candidate for current network"
+	#echo $MSG
 	#logger $MSG
 	case $CB_NAME in
 		on_stop )
 			#####################################################
-			# Remove_service_ip if exists
+			# Remove service_ip if exists
 			#####################################################
 			if [[ ! -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
 				sudo ip address del $VIP/$PREFIX dev $IFNAME;
 				EXITCODE=$?;
 				if [[ $EXITCODE -eq 0 ]]; then
-					MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
+					MSG="[$LOGHEADER] INFO: Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
 					echo $MSG
 					#logger $MSG
 				else
-					MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+					MSG="[$LOGHEADER] ERROR: Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
 					echo $MSG
 					#logger $MSG
 				fi
 			else
-				MSG="[$LOGHEADER] VIP $VIP not exist, no action required.";
+				MSG="[$LOGHEADER] INFO: VIP $VIP not exist, no action required.";
 				#echo $MSG
 				#logger $MSG
 			fi
@@ -247,96 +252,102 @@ else
 		on_start|on_role_change )
 			if [[ $ROLE == 'master' ]]; then
 				#####################################################
-				# Add_service_ip if not exists
+				# Add service_ip if not exists
 				#####################################################
 				if [[ -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
 					sudo ip address add $VIP/$PREFIX dev $IFNAME;
 					EXITCODE=$?;
 					if [[ $EXITCODE -eq 0 ]]; then
-						MSG="[$LOGHEADER] Adding VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
+						MSG="[$LOGHEADER] INFO: Adding VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
 						echo $MSG
 						#logger $MSG
 					else
-						MSG="[$LOGHEADER] Adding VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+						MSG="[$LOGHEADER] ERROR: Adding VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
 						echo $MSG
 						#logger $MSG
-					fi    
+					fi
 				else
-					MSG="[$LOGHEADER] VIP $VIP already present, no action required.";
+					MSG="[$LOGHEADER] INFO: VIP $VIP already present, no action required.";
 					#echo $MSG
 					#logger $MSG
 				fi
 				
 				#####################################################
-				# Register DNS (set in every case)
+				# Register DNS
 				#####################################################
-				# Prepare parameters for nsupdate (operator <<- used for use tab symbols)
-				NSDATA=$(cat <<-EOF
-				server $DNSserver
-				zone $DNSzoneFQDN
-				update delete $VCompNameFQDN A
-				update add $VCompNameFQDN $TTL A $VIP
-				send
-				EOF
-				)
+				if [[ "" != "$DNSzoneFQDN" ]] && [[ "" != "$DNSserver" ]] && [[ "" != "$VCompName" ]]; then
+					MSG="[$LOGHEADER] INFO: Detected DNS zone FQDN is $DNSzoneFQDN"
+					echo $MSG
+					MSG="[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"
+					echo $MSG
+					# Prepare parameters for nsupdate (operator <<- used for use tab symbols)
+					NSDATA=$(cat <<-EOF
+					server $DNSserver
+					zone $DNSzoneFQDN
+					update delete $VCompNameFQDN A
+					update add $VCompNameFQDN $TTL A $VIP
+					send
+					EOF
+					)
 				
-				# Authentication by $VCompName Computer account
-				echo "$VCompPassword" | kinit $VCompName$ >/dev/null && KINITEXITCODE=$?
-				
-				# AddOrUpdateDNSRecord
-				if [[ ! -z $VCompPassword ]] && [[ $KINITEXITCODE -eq 0 ]]; then
-					# Active Directory authentication under Computer Account is success
-					# View received Kerberos tickets: klist
-					nsupdate -g -v <(echo "$NSDATA")
-					EXITCODE=$?;
-					if [[ $EXITCODE -eq 0 ]]; then
-						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED"
-						echo $MSG
-						#logger $MSG
+					# Authentication by $VCompName Computer account
+					echo "$VCompPassword" | kinit $VCompName$ >/dev/null && KINITEXITCODE=$?
+
+					# AddOrUpdateDNSRecord
+					if [[ ! -z $VCompPassword ]] && [[ $KINITEXITCODE -eq 0 ]]; then
+						# Active Directory authentication under Computer Account is success
+						# View received Kerberos tickets: klist
+						nsupdate -g -v <(echo "$NSDATA")
+						EXITCODE=$?;
+						if [[ $EXITCODE -eq 0 ]]; then
+							MSG="[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED"
+							echo $MSG
+							#logger $MSG
+						else
+							MSG="[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error code $EXITCODE"
+							echo $MSG
+							#logger $MSG
+						fi
 					else
-						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error code $EXITCODE"
-						echo $MSG
-						#logger $MSG
-					fi
-				else
-					# Active Directory authentication is failed. Try to non-secure DNS-update.
-					nsupdate -v <(echo "$NSDATA")
-					EXITCODE=$?;
-					if [[ $EXITCODE -eq 0 ]]; then
-						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with non-secure DNS update SUCCEEDED"
-						echo $MSG
-						#logger $MSG
-					else
-						MSG="[$LOGHEADER] Registering $VCompNameFQDN on $DNSserver with non-secure DNS update FAILED with error code $EXITCODE."
-						echo $MSG
-						#logger $MSG
+						# Active Directory authentication is failed. Try to non-secure DNS-update.
+						nsupdate -v <(echo "$NSDATA")
+						EXITCODE=$?;
+						if [[ $EXITCODE -eq 0 ]]; then
+							MSG="[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update SUCCEEDED"
+							echo $MSG
+							#logger $MSG
+						else
+							MSG="[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update FAILED with error code $EXITCODE."
+							echo $MSG
+							#logger $MSG
+						fi
 					fi
 				fi
 			else
 				#####################################################
-				# Remove_service_ip if exists
+				# Remove service_ip if exists
 				#####################################################
 				if [[ ! -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
 					sudo ip address del $VIP/$PREFIX dev $IFNAME;
 					EXITCODE=$?;
 					if [[ $EXITCODE -eq 0 ]]; then
-						MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
+						MSG="[$LOGHEADER] INFO: Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
 						echo $MSG
 						#logger $MSG
 					else
-						MSG="[$LOGHEADER] Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+						MSG="[$LOGHEADER] ERROR: Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
 						echo $MSG
 						#logger $MSG
 					fi
 				else
-					MSG="[$LOGHEADER] VIP $VIP not exist, no action required.";
+					MSG="[$LOGHEADER] INFO: VIP $VIP not exist, no action required.";
 					#echo $MSG
 					#logger $MSG
 				fi
 			fi
-			;;
-	   * )
-			usage
-			;;
+		;;
+		* )
+		usage
+		;;
 	esac
 fi
