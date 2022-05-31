@@ -32,7 +32,7 @@ This script requires root privileges or sudo and run by Patroni service.
 
 - **Linux (Operation System)**: 
 
-Update your operating system on your target servers before deploying;
+Update your operating system on your target servers before deploying.
 
 Patroni hosts must be joined to Active Directory Domain, if DNS authentication required.
 
