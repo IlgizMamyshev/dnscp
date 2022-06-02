@@ -22,8 +22,7 @@ The script uses the [Patroni](https://github.com/zalando/patroni) [callback](htt
 Debian based distros (x86_64)
 
 ###### Supported Linux Distributions:
-- **Debian**: 9, 10, 11
-- **Astra Linux**: CE, SE
+- **Astra Linux**: CE (based on Debian 9), SE (based on Debian 10)
 
 :white_check_mark: tested, works fine: `Astra Linux CE 2.12, Astra Linux SE 1.7`
 
@@ -76,8 +75,7 @@ sudo apt-get install dnsutils
 sudo apt-get install astra-winbind
 ```
 
-3. Create Active Directory Computer Account (if authentication on DNS server required)
-Create Active Directory Computer Account, for example (PowerShell):
+3. Create Active Directory Computer Account (if authentication on DNS server required), for example (PowerShell):
 ```
 New-ADComputer pgsql
 ```
@@ -97,14 +95,12 @@ sudo chmod ugo+x /etc/patroni/dnscp.sh
 5. Variables
 - One VIP or some VIPs in different subnets (DataCenters):
 ```VIPs="172.16.10.10,172.16.20.10,172.16.30.10"``` 
-VIP addresses (IPv4) in different subnets separated by commas. Used for client access to Postgre SQL cluster.
+VIP addresses (IPv4) in different subnets separated by commas. Used for client access to PostgreSQL cluster.
 - Virtual Computer Name - Client Access Point:  
 ```VCompName="pgsql"```
-- Virtual Computer Name account in Active Directory:  
-   for authenticated access on the DNS server:  
+- Virtual Computer Name account password (for accaunt in Active Directory) for authenticated access on the DNS server:  
    ```VCompPassword="P@ssw0rd"```  
-   for anonimous access on the DNS server:  
-   ```VCompPassword=""```
+   , or empty ```VCompPassword=""``` for anonimous access on the DNS server.
 - DNS zone FQDN:  
 ```DNSzoneFQDN=""```  
 Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Empty for automatically detect.
