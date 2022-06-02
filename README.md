@@ -136,12 +136,9 @@ Licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 ## Author
 Ilgiz Mamyshev (Microsoft SQL Server, PostgreSQL DBA) \
 [https://imamyshev.wordpress.com](https://imamyshev.wordpress.com/2022/05/29/dns-connection-point-for-patroni/)
-<<<<<<< HEAD
 
 ### Sponsor this project
 [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dvitabaks%26type%3Dpatrons&style=for-the-badge)](https://patreon.com/imamyshev)
-=======
->>>>>>> 7d839a5f370f76fae5bccf2e1daa5a46602dc7e9
 
 ## Feedback, bug-reports, requests, ...
 Are [welcome](https://github.com/IlgizMamyshev/dnscp/issues)!
