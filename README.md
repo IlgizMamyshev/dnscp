@@ -96,9 +96,9 @@ sudo chmod ugo+x /etc/patroni/dnscp.sh
 - One VIP or some VIPs in different subnets (DataCenters):
 ```VIPs="172.16.10.10,172.16.20.10,172.16.30.10"``` 
 VIP addresses (IPv4) in different subnets separated by commas. Used for client access to PostgreSQL cluster.
-- Virtual Computer Name - Client Access Point:  
+- Virtual Computer Name - client access point:  
 ```VCompName="pgsql"```
-- Virtual Computer Name account password (for accaunt in Active Directory) for authenticated access on the DNS server:  
+- Virtual Computer Name account password (for account in Microsoft Active Directory) for authenticated access on the Microsoft DNS server:  
    ```VCompPassword="P@ssw0rd"```  
    , or empty ```VCompPassword=""``` for anonimous access on the DNS server.
 - DNS zone FQDN:  
