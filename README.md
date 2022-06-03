@@ -1,51 +1,54 @@
-# DNS Connection Point (for Patroni)
+# DNS Connection Point for Patroni
 
 ![GitHub stars](https://img.shields.io/github/stars/IlgizMamyshev/dnscp)
 
 ---
 
-### Bash script for support multi-site PostgreSQL High-Availability Cluster based on Patroni
+### Bash скрипт для поддержки высокодоступного кластера PostgreSQL на основе Patroni
 
-This script designed for deploying a PostgreSQL high availability cluster on dedicated servers for a production environment.
-The script provides registration of the DNS entry and allows the use of one, two or more virtual addresses located in different networks.
-The script uses the [Patroni](https://github.com/zalando/patroni) [callback](https://patroni.readthedocs.io/en/latest/SETTINGS.html) function.
+Этот скрипт разработан для развёртывания высокодоступного кластера PostgreSQL на выделенных серверах.  
 
-###### Script features:
-- Add VIP address to network interface if Patroni start Leader role
-- Remove VIP address from network interface if Patroni stop or switch to non-Leader role
-- Register\Update DNS A-record for PostgreSQL client access
+Скрипт обеспечивает регистрацию DNS-записи для клиентского доступа и позволяет использовать один или более виртуальных IP-адреса, расположенных в разных подсетях.
+Скрипт использует функцию обратных вызовов ([callback](https://patroni.readthedocs.io/en/latest/SETTINGS.html)) [Patroni](https://github.com/zalando/patroni).
 
-> :heavy_exclamation_mark: Please test it in your test enviroment before using in a production.
+###### Возможности:
+- Добавляет VIP-адрес на сетевой интерфейс, если Patroni запускается в роли Лидера (Leader)
+- Удаляет VIP-адрес с сетевого интерфейса, если Patroni останавливается или переключается на роль не-Лидера
+- Регистрирует\Обновляет DNS-запись типа A для клиентского доступа к экземпляру PostgreSQL, запущенному в роли Мастера (Patroni на таком узле СУБД - в роли Лидера)
+
+> :heavy_exclamation_mark: Пожалуйста, проведите тестирование, прежде чем использовать в производственной среде.
 
 ---
-## Compatibility
-Debian based distros (x86_64)
+## Совместимость
+Дистрибутивы, основанные на Debian (x86_64)
 
-###### Supported Linux Distributions:
-- **Astra Linux**: CE (based on Debian 9), SE (based on Debian 10)
+###### Поддерживаемые дистрибутивы Linux:
+- **Astra Linux**: CE (основан на Debian 9), SE (основан на Debian 10)
 
-:white_check_mark: tested, works fine: `Astra Linux CE 2.12, Astra Linux SE 1.7`
+:white_check_mark: проверено, работает прекрасно: `Astra Linux CE 2.12, Astra Linux SE 1.7`
 
-## Requirements
-This script requires root privileges or sudo and run by Patroni service.
+## Требования
+Скрипт требует привилегий root или sudo и запускается сервисом Patroni.
 
-- **Linux (Operation System)**: 
+- **Linux (Операционная Система)**: 
 
-Update your operating system on your target servers before deploying.
+Обновите операционные системы узлов кластера перед развёртыванием.
 
-Patroni hosts must be joined to Active Directory Domain, if DNS authentication required.
+Узлы Patroni должны быть членами домена Microsoft Active Directory, если требуется аутентифицированный доступ на запись в DNS-зону.  
+Поддержка домена Astra Linux Directory ([ALDPro](https://astralinux.ru/products/ald-pro)) в проработке.. и обязательно будет ;)
 
 - **PostgreSQL**: 
 
 For any virtual IP based solutions to work in general with Postgres you need to make sure that it is configured to automatically scan and bind to all found network interfaces. So something like * or 0.0.0.0 (IPv4 only) is needed for the listen_addresses parameter to activate the automatic binding. This again might not be suitable for all use cases where security is paramount for example.
+Чтобы любые решения на основе виртуальных IP-адресов в целом работали с PostgreSQL, необходимо убедиться, что он настроен на автоматическое сканирование и привязку ко всем найденным сетевым интерфейсам. Например укажите ```*``` или ```0.0.0.0``` (только для IPv4) (или перечислите все потенциально возможные для этого интерфейса IPv4 адреса через запятую) в параметре ```listen_addresses``` конфигурации PostgreSQL, чтобы активировать автоматическую привязку.
 
 Nonlocal bind.  
-If you can't set listen_addresses to a wildcard address, you can explicitly specify only those adresses that you want to listen to. However, if you add the virtual IP to those addresses, PostgreSQL will fail to start when that address is not yet registered on one of the interfaces of the machine. You need to configure the kernel to allow "nonlocal bind" of IP (v4) addresses:
-- temporarily:
+Если вы не можете установить ```listen_addresses``` в адрес с подстановочным знаком, вы можете явно указать только те адреса, которые вы хотите прослушивать. Однако если вы добавите виртуальный IP-адрес к этим адресам, PostgreSQL не запустится, если этот адрес ещё не зарегистрирован на одном из интерфейсов компьютера. Вам необходимо настроить ядро, чтобы разрешить "нелокальную привязку" IP-адресов (v4):
+- временно:
 ```
 sysctl -w net.ipv4.ip_nonlocal_bind=1
 ```
-- permanently:
+- постоянно:
 ```
 echo "net.ipv4.ip_nonlocal_bind = 1"  >> /etc/sysctl.conf
 sysctl -p
@@ -53,64 +56,68 @@ sysctl -p
 
 ---
 
-## Deployment: quick start
-0. Before
-Patroni cluster must be deployed
-###### For example use this playbook https://github.com/vitabaks/postgresql_cluster.git
+## Развёртывание (вариант)
+0. Перед началом
+В данном варианте кластер Patroni уже должен быть развёрнут
+###### Например используйте следующий playbook - https://github.com/vitabaks/postgresql_cluster.git
 
-Patroni hosts must be joined to Active Directory Domain, if DNS authentication required, otherwise, anonymous access to the DNS server is used.
-###### Example: Join Astra Linux to Active Directory https://wiki.astralinux.ru/pages/viewpage.action?pageId=27361515
+Если вы хотите комплексное решение, которое уже включает в себя данный bash-скрипт, то вам сюда - https://github.com/IlgizMamyshev/pgsql_cluster , а инструкцию ниже воспринимайте для общего понимания работы данной подсистемы.
+
+Узел кластера Patroni (он же узел кластера СУБД) должен быть членом домена Microsoft Active Directory, если требуется аутентифицированный доступ на запись в DNS-зону, иначе используется анонимный доступ к DNS-зоне.
+###### Например: Присоединить Astra Linux к домену Active Directory https://wiki.astralinux.ru/pages/viewpage.action?pageId=27361515
 ```
 sudo apt-get install astra-winbind
 sudo astra-winbind -dc dc1.example.ru -u Administrator -px
 ```
 
-1. Install nsupdate package: 
+1. Установить пакет nsupdate: 
 ```
 sudo apt-get install dnsutils
 ```
 
-2. Install\check astra-winbind package: 
+2. Установить\проверить наличие установленного пакета astra-winbind: 
 ```
 sudo apt-get install astra-winbind
 ```
 
-3. Create Active Directory Computer Account (if authentication on DNS server required), for example (PowerShell):
+3. Создать в Active Directory учётную запись Компьютера (если требуется аутентифицированный доступ на запись в DNS-зону), например (PowerShell):
 ```
 New-ADComputer pgsql
 ```
   
-Set new password for Computer Account, for example (PowerShell):
+Задать для учётной записи Компьютера новый пароль, например (PowerShell):
 ```
 Get-ADComputer pgsql | Set-ADAccountPassword -Reset -NewPassword (ConvertTo-SecureString -AsPlainText "P@ssw0rd" -Force)
 ```
+В среде домена Active Directory компьютеры-члены домена с операционной системой Windows и Windows Server регулярно меняют свой пароль учетной записи Компьютера.  
+Компьютеры-члены домена с операционной системой Linux менять пароль своей учетной записи Компьютера "не умеют" и не меняют на протяжении всего времени членства в домене, поэтому вам не стоит переживать за исрок истечения пароля учетной записи Компьютера.  
+Рекомендуется задать сложный пароль, он будет храниться в открытом виде в файле-конфигурации Patroni (/etc/patroni/patroni.yml).  
   
-If anonymous authentication is used to access the DNS server, there is no need to create a computer account.
+Если планируется испорльзование анонимного доступа на запись в DNS-зону, тогда вам нет необходимости создавать учётную запись Компьютера.  
 
-4. Put script to "/etc/patroni/dnscp.sh" and set executable (adds the execute permission for all users to the existing permissions):
+4. Разместите файл скрипта [dnscp.sh](./dnscp.sh) в каталог "/etc/patroni" и сделайте его исполняемым (добавьте разрешения для запуска для всех пользователей, которые имеют доступ к данному файлу):
 ```
 sudo chmod ugo+x /etc/patroni/dnscp.sh
 ```
 
-5. Variables
-- One VIP or some VIPs in different subnets (DataCenters):
-```VIPs="172.16.10.10,172.16.20.10,172.16.30.10"``` 
-VIP addresses (IPv4) in different subnets separated by commas. Used for client access to PostgreSQL cluster.
-- Virtual Computer Name - client access point:  
-```VCompName="pgsql"```
-- Virtual Computer Name account password (for account in Microsoft Active Directory) for authenticated access on the Microsoft DNS server:  
+5. Переменные
+- Один VIP (если все узлы кластера СУБД в одной подсети) или несколько VIP (узлы кластера СУБД в разных подсетях (разных Дата Центрах)):
+   ```VIPs="172.16.10.10,172.16.20.10,172.16.30.10"``` 
+VIP адреса (IPv4) в разных подсетях пишутся в одну строчку, с разделением запятой. Клиентские подключения будут выполняться на один из этих адресов (DNS-имя клиентского доступа будет разрешаться в один из этих адресов).
+- Виртуальное имя Компьютера - это точка клиентского доступа, имя для A-записи в DNS-зоне:  
+   ```VCompName="pgsql"```
+- Пароль для учётной записи Компьютера (если создавалась):  
    ```VCompPassword="P@ssw0rd"```  
-   , or empty ```VCompPassword=""``` for anonimous access on the DNS server.
-- DNS zone FQDN:  
-```DNSzoneFQDN=""```  
-Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Empty for automatically detect.
-- DNS Server FQDN or IP:  
-```DNSserver=""```  
- Empty is recommended for automatically detect. Used for register DNS name.
+   , задайте переменную пустой ```VCompPassword=""```, если планируется использование анонимной аутентификации.
+- Полное доменное имя (FQDN) DNS-зоны:  
+   ```DNSzoneFQDN=""```  
+Для домена Microsoft Active Directory это FQDN домена. Оставьте переменную пустой для автоматического определения имени домена.  
+- FQDN или IP-адрес сервера DNS:  
+   ```DNSserver=""```  
+   Этот DNS-сервер используется для регистрации A-записи в DNS-зоне.  
+   Оставьте переменную пустой для автоматического определения DNS-сервера (рекомендуется).
 
-See the [dnscp.sh](./dnscp.sh) file for more details.
-
-6. Enable using callbacks in Patroni configuration (/etc/patroni/patroni.yml):
+6. Включить использование callbacks в файле конфигурации Patroni (/etc/patroni/patroni.yml):
 ```
 postgresql:
   callbacks:
@@ -119,22 +126,26 @@ postgresql:
     on_role_change: /etc/patroni/dnscp.sh
 ```
 
-7. Test run:
+7. Тестовый запуск:
+Вы можете запускать скрипт, самостоятельно вручную, в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
 sudo /etc/patroni/dnscp.sh on_role_change master patroniclustername
 ```
+Скрипт принимает на вход 3 параметра.  
+Подробнее о работе скрипта смотрите в комментариях к коду в файле [dnscp.sh](./dnscp.sh).  
+[Подробнее о callback](https://patroni.readthedocs.io/en/latest/SETTINGS.html)
 
 ---
 
-## License
-Licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+## Лицензия
+Под лицензией MIT License. Подробнее см. в файле [LICENSE](./LICENSE) .
 
-## Author
-Ilgiz Mamyshev (Microsoft SQL Server, PostgreSQL DBA) \
+## Автор
+Илгиз Мамышев (Microsoft SQL Server, PostgreSQL DBA) \
 [https://imamyshev.wordpress.com](https://imamyshev.wordpress.com/2022/05/29/dns-connection-point-for-patroni/)
 
-### Sponsor this project
+### Поддержать данный проект
 [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dvitabaks%26type%3Dpatrons&style=for-the-badge)](https://patreon.com/imamyshev)
 
-## Feedback, bug-reports, requests, ...
-Are [welcome](https://github.com/IlgizMamyshev/dnscp/issues)!
+## Обратная связь, отчеты об ошибках, запросы и т.п.
+[Добро пожаловать](https://github.com/IlgizMamyshev/dnscp/issues)!
