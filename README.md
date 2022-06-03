@@ -41,7 +41,6 @@
 
 - **PostgreSQL**: 
 
-For any virtual IP based solutions to work in general with Postgres you need to make sure that it is configured to automatically scan and bind to all found network interfaces. So something like * or 0.0.0.0 (IPv4 only) is needed for the listen_addresses parameter to activate the automatic binding. This again might not be suitable for all use cases where security is paramount for example.
 Чтобы любые решения на основе виртуальных IP-адресов в целом работали с PostgreSQL, необходимо убедиться, что он настроен на автоматическое сканирование и привязку ко всем найденным сетевым интерфейсам. Например укажите ```*``` или ```0.0.0.0``` (только для IPv4) (или перечислите все потенциально возможные для этого интерфейса IPv4 адреса через запятую) в параметре ```listen_addresses``` конфигурации PostgreSQL, чтобы активировать автоматическую привязку.
 
 Nonlocal bind.  
