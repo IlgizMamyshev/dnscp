@@ -58,6 +58,7 @@ sysctl -p
 ---
 
 ## Развёртывание (вариант)
+
 0. Перед началом
 В данном варианте кластер Patroni уже должен быть развёрнут
 ###### Например используйте следующий playbook - https://github.com/vitabaks/postgresql_cluster.git
@@ -76,7 +77,7 @@ sudo astra-winbind -dc dc1.example.ru -u Administrator -px
 sudo apt-get install dnsutils
 ```
 
-2. Установить\проверить наличие установленного пакета astra-winbind: 
+2. Установить\проверить наличие установленного пакета astra-winbind (если требуется аутентифицированный доступ на запись в DNS-зону): 
 ```
 sudo apt-get install astra-winbind
 ```
