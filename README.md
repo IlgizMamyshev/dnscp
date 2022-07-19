@@ -23,12 +23,15 @@
 
 ---
 ## Совместимость
-Дистрибутивы, основанные на Debian (x86_64)
 
-###### Поддерживаемые дистрибутивы Linux:
-- **Astra Linux**: CE (основан на Debian 9), SE (основан на Debian 10)
+#### Операционные Системы:
+- **Debian**: 9, 10, 11
+- **Astra Linux**: Common Edition (основан на Debian 9), Spetial Edition (основан на Debian 10)
 
-:white_check_mark: проверено, работает прекрасно: `Astra Linux CE 2.12, Astra Linux SE 1.7`
+#### Службы каталога:
+- **Microsoft Active Directory**: :white_check_mark:
+- **Astra Linux Directory**: ожидается..
+- **РЕД СОФТ Samba DC**: ожидается..
 
 ## Требования
 Скрипт требует привилегий root или sudo и запускается сервисом Patroni.
