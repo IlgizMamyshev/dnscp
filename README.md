@@ -3,7 +3,7 @@
 ![GitHub stars](https://img.shields.io/github/stars/IlgizMamyshev/dnscp)
 
 ---
-![Banner](https://github.com/IlgizMamyshev/pgsql_cluster/blob/master/doc/dnscpBanner1600x400.png)
+![Banner](https://github.com/IlgizMamyshev/dnscp/blob/master/doc/dnscpBanner1600x400.png)
 
 ### Bash скрипт для поддержки высокодоступного кластера PostgreSQL на основе Patroni
 
