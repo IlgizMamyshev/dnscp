@@ -1,8 +1,5 @@
 # DNS Connection Point for Patroni
 
-![GitHub stars](https://img.shields.io/github/stars/IlgizMamyshev/dnscp)
-
----
 ![Banner](https://github.com/IlgizMamyshev/dnscp/blob/main/doc/dnscpBanner1600x400.png)
 
 ### Bash скрипт для поддержки высокодоступного кластера PostgreSQL на основе Patroni
