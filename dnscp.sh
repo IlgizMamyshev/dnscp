@@ -7,31 +7,31 @@
 #
 # Thanks for the help Nikolay Mishchenko https://github.com/NickNeoOne
 
-### Script for multi-site Patroni clusters (version 31.05.2022)
+# v11082022
+# https://github.com/IlgizMamyshev/dnscp
+### Script for Patroni clusters
 # * Uses Patroni callback
-# * VIP addresses can be from different subnets - one VIP address per subnet.
-# * Microsoft DNS Server and Active Directory Domain Services needed
-#
-# Script Features:
-# * Add VIP address to network interface if Patroni start Leader role
-# * Remove VIP address from network interface if Patroni stop or switch to non-Leader role
-# * Register\Update DNS A-record for PostgreSQL client access
+# * VIP address management
+#   - Add VIP address to network interface if Patroni start Leader role
+#   - Remove VIP address from network interface if Patroni stop or switch to non-Leader role
+# * DNS name management
+#   - Register\Update DNS A-record for PostgreSQL client access
+# * Support multi-site network
 
 ### Installing script
-# * Add VIPs to PGBouncer config (listen addresses), if needed.
 # * Enable using callbacks in Patroni configuration (/etc/patroni/patroni.yml):
 #postgresql:
 #  callbacks:
 #    on_start: /etc/patroni/dnscp.sh
 #    on_stop: /etc/patroni/dnscp.sh
 #    on_role_change: /etc/patroni/dnscp.sh
-# * Put script to "/etc/patroni/dnscp.sh" and set executable (adds the execute permission for all users to the existing permissions.):
-#   sudo mv /home/user/scripts/dnscp.sh /etc/patroni/dnscp.sh && sudo chmod ugo+x /etc/patroni/dnscp.sh
+# * Put script to "/etc/patroni/dnscp.sh" and set executable (sudo chmod ugo+x /etc/patroni/dnscp.sh):
 # * Test run:
 #   sudo /etc/patroni/dnscp.sh on_role_change master patroniclustername
 
 ### Operation System prerequisites
-# * Astra Linux OS (or compatible)
+# * Debian
+# * Astra Linux
 
 ### PostgreSQL prerequisites
 # For any virtual IP based solutions to work in general with Postgres you need to make sure that it is configured to automatically scan and bind to all found network interfaces. So something like * or 0.0.0.0 (IPv4 only) is needed for the listen_addresses parameter to activate the automatic binding. This again might not be suitable for all use cases where security is paramount for example.
@@ -43,8 +43,8 @@
 # echo "net.ipv4.ip_nonlocal_bind = 1"  >> /etc/sysctl.conf
 # sysctl -p
 
-### DNS Name as Client Access Point prerequisites
-# Scenario 1 (AD DNS ans secure DNS update):
+### Other prerequisites
+# Scenario 1 (secure DNS update):
 # 	* Patroni hosts must be joined to Active Directory Domain
 # 		For expample: Join Astra Linux to Active Directory https://wiki.astralinux.ru/pages/viewpage.action?pageId=27361515
 #			sudo apt-get install astra-winbind
@@ -52,22 +52,22 @@
 # 	* Create Active Directory Computer Account (will be used as Client Access Point) in any way, for example (PowerShell, from domain joined Windows Server): New-ADComputer pgsql
 # 	* Set new password for Computer Account, for example (PowerShell): Get-ADComputer pgsql | Set-ADAccountPassword -Reset -NewPassword (ConvertTo-SecureString -AsPlainText "P@ssw0rd" -Force)
 # Scenario 2 (Non-secure DNS update):
-#	* Microsoft DNS Server and DNS-zone with allow non-secure DNS update.
+#	* DNS Server and DNS-zone with allow non-secure DNS update
 # Common:
 # 	* Install nsupdate utility: sudo apt-get install dnsutils
 
 #####################################################
 # Change only this variables
 #####################################################
-readonly VIPs="172.16.10.10,172.16.20.10,172.16.30.10" # VIP addresses (IPv4) in different subnets separated by commas, for client access to databases in the cluster
+readonly VIPs="10.10.0.10" # VIP addresses (IPv4) in different subnets separated by commas, for client access to databases in the cluster
 readonly VCompName="pgsql" # Virtual Computer Name - Client Access Point
-readonly VCompPassword="P@ssw0rd" # Blank for non-secure update or set password for Virtual Computer Name account in Active Directory
-DNSzoneFQDN="" # Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Empty for automatically detect.
+readonly VCompPassword="P@ssw0rd" # Blank for non-secure update or set password for Virtual Computer Name account in Active Directory\SAMBA
+DNSzoneFQDN="demo.ru" # Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Empty for automatically detect.
 
 #####################################################
 # Other variables
 #####################################################
-DNSserver="" # Set FQDN or IP or empty (recommended for automatically detect). Used for register DNS name.
+DNSserver="dc1.demo.ru" # Set FQDN or IP or empty (recommended for automatically detect). Used for register DNS name.
 readonly SCRIPTNAME=$(echo $0 | awk -F"/" '{print $NF}')
 readonly SCRIPTPATH=$(dirname $0)
 readonly TTL=30 # DNS record TTL
@@ -77,7 +77,6 @@ readonly SCOPE=$3
 readonly LOGHEADER="Patroni Callback"
 MSG="[$LOGHEADER] Called: $0 <CB_NAME=$CB_NAME> <ROLE=$ROLE> <SCOPE=$SCOPE>"
 echo $MSG
-#logger $MSG
 
 #####################################################
 # Check prerequisites
@@ -86,12 +85,12 @@ echo $MSG
 if [[ "" == "$VIPs" ]]; then
     MSG="[$LOGHEADER] INFO: Check prerequisites: VIPs not defined. Nothing to do."
     echo $MSG
-    #logger $MSG
     exit 0; # Exit without error
 fi
 
-## Active Directory Domain joined? (check that the password is set and astra-winbind command exist)
+## Active Directory\SAMBA Domain joined? (check that the password is set and astra-winbind command exist)
 REQUIRED_PKG="astra-winbind"
+JOINED_OK=""
 if [[ ! -z $VCompPassword ]] && [[ "" != "$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")" ]]; then
     JOINED_OK=$(astra-winbind -i | awk '{print $NF}')
     if [[ "succeeded" == "$JOINED_OK" ]]; then
@@ -100,13 +99,10 @@ if [[ ! -z $VCompPassword ]] && [[ "" != "$(dpkg-query -W --showformat='${Status
             DNSzoneFQDN=$(astra-winbind -i | awk -F\" '{print $2}' | cut --complement --delimiter "." --fields 1)
             #MSG="[$LOGHEADER] INFO: Detected DNS zone FQDN is $DNSzoneFQDN"
             #echo $MSG
-            #logger $MSG
         fi
     else
-        MSG="[$LOGHEADER] ERROR: Check prerequisites: Not joined to Active Directory Domain!"
+        MSG="[$LOGHEADER] WARNING: Check prerequisites: Not joined to Active Directory\SAMBA Domain!"
         echo $MSG
-        #logger $MSG
-    exit 1; # Exit with error
     fi
     # $VCompPassword is empty. Script configured for non-secure DNS update.
 fi
@@ -115,26 +111,33 @@ fi
 REQUIRED_PKG="dnsutils"
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
 if [[ "" == "$PKG_OK" ]]; then
-    MSG="[$LOGHEADER] ERROR: Check prerequisites: No $REQUIRED_PKG."
+    MSG="[$LOGHEADER] WARNING: Check prerequisites: No $REQUIRED_PKG."
     echo $MSG
-    #logger $MSG
     #sudo apt-get --yes install $REQUIRED_PKG #Setting up $REQUIRED_PKG
     exit 1; # Exit with error
 else
     # Detect DNS Server
-    if [[ "" == "$DNSserver" ]]; then
+    if [[ "" == "$DNSserver" ]] && [[ "succeeded" == "$JOINED_OK" ]]; then
         # DNSserver=$(nslookup $(hostname).$DNSzoneFQDN | awk '/Server:/{gsub(/\/.*$/, "", $2); print $2}') # This is Primary DNS on network interface
         DNSserver=$(astra-winbind -i | awk -F\" '{print $2}') # AD DS logon DC
         #MSG="[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"
         #echo $MSG
-        #logger $MSG
     fi
 fi
 
+# Set failsafe value
+if [[ "" == "$DNSserver" ]] && [[ "" != "$DNSzoneFQDN" ]]; then
+    DNSserver=$DNSzoneFQDN
+fi
+
+# Last check
 if [[ "" == "$DNSzoneFQDN" ]] || [[ "" == "$DNSserver" ]] || [[ "" == "$VCompName" ]]; then
-    MSG="[$LOGHEADER] INFO: Not all DNS options are set. Only VIPS wil be managed."
+    MSG=""; MSGSEPARATOR="";
+    if [[ "" == "$DNSzoneFQDN" ]]; then MSG="$MSG${MSGSEPARATOR}DNSzoneFQDN"; MSGSEPARATOR=", "; fi
+    if [[ "" == "$DNSserver" ]]; then MSG="$MSG${MSGSEPARATOR}DNSserver"; MSGSEPARATOR=", "; fi
+    if [[ "" == "$VCompName" ]]; then MSG="$MSG${MSGSEPARATOR}$MSGVCompName"; MSGSEPARATOR=", "; fi
+    MSG="[$LOGHEADER] INFO: DNSCP does not know about $MSG. Only VIPs wil be managed."
     echo $MSG
-    #logger $MSG
 fi
 
 readonly VCompNameFQDN=$VCompName.$DNSzoneFQDN
@@ -218,14 +221,12 @@ done
 if [[ -z $VIP ]]; then
 	MSG="[$LOGHEADER] WARNING: No suitable VIP ($VIPs) for $NETWORK"
 	echo $MSG
-    #logger $MSG
 else
 	#####################################################
 	# VIP
 	#####################################################
 	#MSG="[$LOGHEADER] INFO: VIP $VIP is candidate for current network"
 	#echo $MSG
-	#logger $MSG
 	case $CB_NAME in
 		on_stop )
 			#####################################################
@@ -237,16 +238,13 @@ else
 				if [[ $EXITCODE -eq 0 ]]; then
 					MSG="[$LOGHEADER] INFO: Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
 					echo $MSG
-					#logger $MSG
 				else
 					MSG="[$LOGHEADER] ERROR: Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
 					echo $MSG
-					#logger $MSG
 				fi
 			else
 				MSG="[$LOGHEADER] INFO: VIP $VIP not exist, no action required.";
 				#echo $MSG
-				#logger $MSG
 			fi
 			;;
 		on_start|on_role_change )
@@ -260,16 +258,13 @@ else
 					if [[ $EXITCODE -eq 0 ]]; then
 						MSG="[$LOGHEADER] INFO: Adding VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
 						echo $MSG
-						#logger $MSG
 					else
 						MSG="[$LOGHEADER] ERROR: Adding VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
 						echo $MSG
-						#logger $MSG
 					fi
 				else
 					MSG="[$LOGHEADER] INFO: VIP $VIP already present, no action required.";
 					#echo $MSG
-					#logger $MSG
 				fi
 				
 				#####################################################
@@ -291,35 +286,34 @@ else
 					)
 				
 					# Authentication by $VCompName Computer account
-					echo "$VCompPassword" | kinit $VCompName$ >/dev/null && KINITEXITCODE=$?
+					KINITEXITCODE=-1
+					if [[ "succeeded" == "$JOINED_OK" ]]; then
+						echo "$VCompPassword" | kinit $VCompName$ >/dev/null && KINITEXITCODE=$?
+					fi
 
 					# AddOrUpdateDNSRecord
 					if [[ ! -z $VCompPassword ]] && [[ $KINITEXITCODE -eq 0 ]]; then
-						# Active Directory authentication under Computer Account is success
+						# Active Directory\SAMBA authentication under Computer Account is success
 						# View received Kerberos tickets: klist
 						nsupdate -g -v <(echo "$NSDATA")
 						EXITCODE=$?;
 						if [[ $EXITCODE -eq 0 ]]; then
 							MSG="[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED"
 							echo $MSG
-							#logger $MSG
 						else
 							MSG="[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error code $EXITCODE"
 							echo $MSG
-							#logger $MSG
 						fi
 					else
-						# Active Directory authentication is failed. Try to non-secure DNS-update.
+						# Active Directory\SAMBA authentication is failed. Try to non-secure DNS-update.
 						nsupdate -v <(echo "$NSDATA")
 						EXITCODE=$?;
 						if [[ $EXITCODE -eq 0 ]]; then
 							MSG="[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update SUCCEEDED"
 							echo $MSG
-							#logger $MSG
 						else
 							MSG="[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update FAILED with error code $EXITCODE."
 							echo $MSG
-							#logger $MSG
 						fi
 					fi
 				fi
@@ -333,16 +327,13 @@ else
 					if [[ $EXITCODE -eq 0 ]]; then
 						MSG="[$LOGHEADER] INFO: Deleting VIP $VIP by Patroni $CB_NAME callback SUCCEEDED"
 						echo $MSG
-						#logger $MSG
 					else
 						MSG="[$LOGHEADER] ERROR: Deleting VIP $VIP by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
 						echo $MSG
-						#logger $MSG
 					fi
 				else
 					MSG="[$LOGHEADER] INFO: VIP $VIP not exist, no action required.";
 					#echo $MSG
-					#logger $MSG
 				fi
 			fi
 		;;
