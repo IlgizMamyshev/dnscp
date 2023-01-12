@@ -7,7 +7,7 @@
 #
 # Thanks for the help Nikolay Mishchenko https://github.com/NickNeoOne
 
-#v11012023
+#v12012023
 # https://github.com/IlgizMamyshev/dnscp
 ### Script for multi-site Patroni clusters
 # * Uses Patroni callback
@@ -20,7 +20,6 @@
 # * Register\Update DNS A-record for PostgreSQL client access
 
 ### Installing script
-# * Add VIPs to PGBouncer config (listen addresses), if needed.
 # * Enable using callbacks in Patroni configuration (/etc/patroni/patroni.yml):
 #postgresql:
 #  callbacks:
@@ -34,7 +33,7 @@
 #   sudo /etc/patroni/dnscp.sh on_schedule registerdns patroniclustername
 
 ### Operation System prerequisites
-# * Astra Linux OS (or compatible)
+# * Astra Linux (Debian or compatible)
 
 ### PostgreSQL prerequisites
 # For any virtual IP based solutions to work in general with Postgres you need to make sure that it is configured to automatically scan and bind to all found network interfaces. So something like * or 0.0.0.0 (IPv4 only) is needed for the listen_addresses parameter to activate the automatic binding. This again might not be suitable for all use cases where security is paramount for example.
@@ -145,7 +144,7 @@ readonly VCompNameFQDN=$VCompName.$DNSzoneFQDN
 #####################################################
 # Funtions
 #####################################################
-function usage() { echo "Usage: $0 <on_start|on_stop|on_role_change> <role> <scope>"; 
+function usage() { echo "Usage: $0 <on_start|on_stop|on_role_change> <role> <scope>";
 exit 1; }
 
 function in_subnet {
@@ -303,15 +302,6 @@ else
                 echo $MSG
                 MSG="[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"
                 echo $MSG
-                # Prepare parameters for nsupdate (operator <<- used for use tab symbols)
-				NSDATA=$(cat <<-EOF
-				server $DNSserver
-				zone $DNSzoneFQDN
-				update delete $VCompNameFQDN A
-				update add $VCompNameFQDN $TTL A $VIP
-				send
-				EOF
-				)
 
                 # Authentication by $VCompName Computer account
                 KINITEXITCODE=-1
@@ -321,9 +311,8 @@ else
 
                 # AddOrUpdateDNSRecord
                 if [[ ! -z $VCompPassword ]] && [[ $KINITEXITCODE -eq 0 ]]; then
-                # Active Directory\SAMBA authentication under Computer Account is success
-                    # View received Kerberos tickets: klist
-                    nsupdate -g -v <(echo "$NSDATA")
+                    # Active Directory\SAMBA authentication under Computer Account is success.
+                    (echo "server $DNSserver"; echo "zone $DNSzoneFQDN"; echo "update delete $VCompNameFQDN A"; echo send; echo "update add $VCompNameFQDN $TTL A $VIP"; echo send) | nsupdate -g -v
                     EXITCODE=$?;
                     if [[ $EXITCODE -eq 0 ]]; then
                         MSG="[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED"
@@ -334,7 +323,7 @@ else
                     fi
                 else
                     # Active Directory\SAMBA authentication is failed. Try to non-secure DNS-update.
-                    nsupdate -v <(echo "$NSDATA")
+                    (echo "server $DNSserver"; echo "zone $DNSzoneFQDN"; echo "update delete $VCompNameFQDN A"; echo send; echo "update add $VCompNameFQDN $TTL A $VIP"; echo send) | nsupdate -v
                     EXITCODE=$?;
                     if [[ $EXITCODE -eq 0 ]]; then
                         MSG="[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update SUCCEEDED"
@@ -352,12 +341,12 @@ else
             #####################################################
             # Remove cron task
             sudo crontab -u $(whoami) -l | grep -v "$0" | sudo crontab -u $(whoami) -
-            MSG="[$LOGHEADER] INFO: 'Dynamic DNS Update' cron task for $(whoami) user removed."
-            echo $MSG
             if [[ -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
                 # service_ip not exists
                 MSG="[$LOGHEADER] INFO: service_ip not exists."
                 #echo $MSG
+                MSG="[$LOGHEADER] INFO: 'Dynamic DNS Update' cron task for $(whoami) user removed."
+                echo $MSG
             else
                 # service_ip exists - Add cron task for Dynamic DNS Updates
                 sudo crontab -u $(whoami) -l 2>/dev/null; echo "53 00 * * * sudo $0 on_schedule registerdns $VCompName" | sudo crontab -u $(whoami) -
