@@ -4,16 +4,11 @@
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
 # modifications, as long as this notice is preserved.
-#
-# Thanks for the help Nikolay Mishchenko https://github.com/NickNeoOne
 
-#v12012023
+### v14012023
 # https://github.com/IlgizMamyshev/dnscp
-### Script for multi-site Patroni clusters
-# * Uses Patroni callback
-# * VIP addresses can be from different subnets - one VIP address per subnet.
-# * Microsoft DNS Server and Active Directory Domain Services needed
-#
+
+### Script for Patroni clusters
 # Script Features:
 # * Add VIP address to network interface if Patroni start Leader role
 # * Remove VIP address from network interface if Patroni stop or switch to non-Leader role
@@ -71,7 +66,7 @@ DNSzoneFQDN="demo.ru" # Set DNS zone FQDN (for example Microsoft AD DS Domain FQ
 DNSserver="" # Set FQDN or IP or empty (recommended for automatically detect). Used for register DNS name.
 readonly SCRIPTNAME=$(echo $0 | awk -F"/" '{print $NF}')
 readonly SCRIPTPATH=$(dirname $0)
-readonly TTL=30 # DNS record TTL
+readonly TTL=1200 # DNS record TTL in seconds. TTL=1200 - default. TTL=30 - recommended for multi-site clusters.
 readonly CB_NAME=$1
 readonly ROLE=$2
 readonly SCOPE=$3
