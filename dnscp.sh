@@ -5,8 +5,8 @@
 # unlimited permission to copy and/or distribute it, with or without
 # modifications, as long as this notice is preserved.
 
-### v14012023
 # https://github.com/IlgizMamyshev/dnscp
+version="15012023";
 
 ### Script for Patroni clusters
 # Script Features:
@@ -24,8 +24,8 @@
 # * Put script to "/etc/patroni/dnscp.sh" and set executable (adds the execute permission for all users to the existing permissions.):
 #   sudo mv /home/user/scripts/dnscp.sh /etc/patroni/dnscp.sh && sudo chmod ugo+x /etc/patroni/dnscp.sh
 # * Test run:
-#   sudo /etc/patroni/dnscp.sh on_role_change master patroniclustername
-#   sudo /etc/patroni/dnscp.sh on_schedule registerdns patroniclustername
+#   sudo /etc/patroni/dnscp.sh -- on_role_change master patroniclustername
+#   sudo /etc/patroni/dnscp.sh -- on_schedule registerdns patroniclustername
 
 ### Operation System prerequisites
 # * Astra Linux (Debian or compatible)
@@ -53,20 +53,44 @@
 #   * Install nsupdate utility: sudo apt-get install dnsutils
 
 #####################################################
-# Change only this variables
+# Variable initialization
 #####################################################
-readonly VIPs="10.10.0.10" # VIP addresses (IPv4) in different subnets separated by commas, for client access to databases in the cluster
-readonly VCompName="pgsql" # Virtual Computer Name - Client Access Point
-readonly VCompPassword="P@ssw0rd" # Blank for non-secure update or set password for Virtual Computer Name account in Active Directory\SAMBA
-DNSzoneFQDN="demo.ru" # Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Empty for automatically detect.
+VCompName="pgsql";
+VCompPassword="";
+DNSzoneFQDN="";
+DNSserver="";
+TTL=1200;
+
+# Option processing
+while [ -n "$1" ]
+do
+case "$1" in
+-h | --help) usage; ;;
+-V | --version) echo "$version"; exit 0; ;;
+-vips) VIPs="$2"
+shift ;;
+-vcompname) VCompName="$2"
+shift ;;
+-vcomppassword) VCompPassword="$2"
+shift ;;
+-dnszonefqdn) DNSzoneFQDN="$2"
+shift ;;
+-dnsserver) DNSserver="$2"
+shift ;;
+-ttl) TTL="$2"
+shift ;;
+--) shift
+break ;;
+*) echo "$1 is not an option"; usage; ;;
+esac
+shift
+done
 
 #####################################################
 # Other variables
 #####################################################
-DNSserver="" # Set FQDN or IP or empty (recommended for automatically detect). Used for register DNS name.
 readonly SCRIPTNAME=$(echo $0 | awk -F"/" '{print $NF}')
 readonly SCRIPTPATH=$(dirname $0)
-readonly TTL=1200 # DNS record TTL in seconds. TTL=1200 - default. TTL=30 - recommended for multi-site clusters.
 readonly CB_NAME=$1
 readonly ROLE=$2
 readonly SCOPE=$3
@@ -139,7 +163,22 @@ readonly VCompNameFQDN=$VCompName.$DNSzoneFQDN
 #####################################################
 # Funtions
 #####################################################
-function usage() { echo "Usage: $0 <on_start|on_stop|on_role_change> <role> <scope>";
+function usage() {
+echo "Usage:";
+echo "  $0 [OPTION...] -- <on_start|on_stop|on_role_change> <role> <scope>";
+echo "";
+echo "DNS Connection Point, version $version";
+echo "";
+echo "Help Options:";
+echo "  -h, --help                Show help options";
+echo "";
+echo "Script Options:";
+echo "  -dnszonefqdn              Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Do no set this option for automatically detect (recommended).";  
+echo "  -dnsserver                Set FQDN or IP or do not set for automatically detect (recommended). Used for register DNS name.";
+echo "  -ttl                      DNS record TTL in seconds. TTL=1200 - default. Set TTL=30 for multi-site clusters (recommended).";
+echo "  -vcompname                Virtual Computer Name - Network name for client access.";
+echo "  -vcomppassword            Password for Virtual Computer Name account in Active Directory\SAMBA. Do no set this option for non-secure DNS update.";
+echo "  -V, -version              Show version";
 exit 1; }
 
 function in_subnet {
