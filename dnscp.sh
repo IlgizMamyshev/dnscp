@@ -5,8 +5,8 @@
 # unlimited permission to copy and/or distribute it, with or without
 # modifications, as long as this notice is preserved.
 
-# https://github.com/IlgizMamyshev/dnscp
 version="15012023";
+giturl="https://github.com/IlgizMamyshev/dnscp";
 
 ### Script for Patroni clusters
 # Script Features:
@@ -53,13 +53,15 @@ version="15012023";
 #   * Install nsupdate utility: sudo apt-get install dnsutils
 
 #####################################################
-# Variable initialization
+# Set variables
 #####################################################
-VCompName="pgsql";
-VCompPassword="";
-DNSzoneFQDN="";
-DNSserver="";
-TTL=1200;
+# Set defaults
+VIPs="";                  # 
+VCompName="pgsql";        #
+VCompPassword="";         # empty for non-secure DNS update
+DNSzoneFQDN="";           # empty for automatically detect
+DNSserver="";             # empty for automatically detect
+TTL=1200;                 # TTL=1200 - default. Use for example TTL=30 for multi-site clusters.
 
 # Option processing
 while [ -n "$1" ]
@@ -86,9 +88,7 @@ esac
 shift
 done
 
-#####################################################
 # Other variables
-#####################################################
 readonly SCRIPTNAME=$(echo $0 | awk -F"/" '{print $NF}')
 readonly SCRIPTPATH=$(dirname $0)
 readonly CB_NAME=$1
@@ -167,18 +167,19 @@ function usage() {
 echo "Usage:";
 echo "  $0 [OPTION...] -- <on_start|on_stop|on_role_change> <role> <scope>";
 echo "";
-echo "DNS Connection Point, version $version";
+echo "DNS Connection Point, version $version, $giturl";
 echo "";
 echo "Help Options:";
-echo "  -h, --help                Show help options";
+echo "  -h, --help                Show help options.";
 echo "";
 echo "Script Options:";
-echo "  -dnszonefqdn              Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Do no set this option for automatically detect (recommended).";  
+echo "  -dnszonefqdn              Set DNS zone FQDN (for example Microsoft AD DS Domain FQDN). Do no set for automatically detect (recommended).";  
 echo "  -dnsserver                Set FQDN or IP or do not set for automatically detect (recommended). Used for register DNS name.";
 echo "  -ttl                      DNS record TTL in seconds. TTL=1200 - default. Set TTL=30 for multi-site clusters (recommended).";
 echo "  -vcompname                Virtual Computer Name - Network name for client access.";
-echo "  -vcomppassword            Password for Virtual Computer Name account in Active Directory\SAMBA. Do no set this option for non-secure DNS update.";
-echo "  -V, -version              Show version";
+echo "  -vcomppassword            Password for Virtual Computer Name account in Active Directory\SAMBA. Do no set for non-secure DNS update.";
+echo "  -vips                     One VIP (IPv4) address (or some VIP addresses in different subnets, separated by commas, for example: '172.16.32.180,172.16.10.180') for client access to databases in the cluster.";
+echo "  -V, -version              Show version.";
 exit 1; }
 
 function in_subnet {
@@ -233,20 +234,16 @@ function in_subnet {
 }
 
 #####################################################
-# Network interface name
+# Main
 #####################################################
+# Network interface name
 IFNAME=$(ip --oneline addr show | awk '$3 == "inet" && $2 != "lo" { print $2; exit}') # or "eth0"
 
-#####################################################
-# Get network
-#####################################################
+# Network id
 NETWORK=$(ip --oneline addr show | awk '$3 == "inet" && $2 != "lo" { print $4; exit}') # 123.123.123.123/24
-# Get network prefix
-PREFIX=$(echo $NETWORK | awk -F"/" '{print $2}')
+NETID=$(echo $NETWORK | awk -F"/" '{print $2}')
 
-#####################################################
 # Check witch IP is in network range
-#####################################################
 for IP in $(echo $VIPs | awk '{gsub(","," "); print $0}'); do
     (( $(in_subnet "$NETWORK" "$IP") )) && VIP=$IP
 done
@@ -266,13 +263,13 @@ else
             # Remove service_ip if exists
             #####################################################
             if [[ ! -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
-                sudo ip address del $VIP/$PREFIX dev $IFNAME;
+                sudo ip address del $VIP/$NETID dev $IFNAME;
                 EXITCODE=$?;
                 if [[ $EXITCODE -eq 0 ]]; then
-                    MSG="[$LOGHEADER] INFO: Deleting VIP '$VIP/$PREFIX dev $IFNAME' by Patroni $CB_NAME callback SUCCEEDED"
+                    MSG="[$LOGHEADER] INFO: Deleting VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback SUCCEEDED"
                     echo $MSG
                 else
-                    MSG="[$LOGHEADER] ERROR: Deleting VIP '$VIP/$PREFIX dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+                    MSG="[$LOGHEADER] ERROR: Deleting VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
                     echo $MSG
                 fi
 
@@ -289,13 +286,13 @@ else
                 # Add service_ip if not exists
                 #####################################################
                 if [[ -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
-                    sudo ip address add $VIP/$PREFIX dev $IFNAME;
+                    sudo ip address add $VIP/$NETID dev $IFNAME;
                     EXITCODE=$?;
                     if [[ $EXITCODE -eq 0 ]]; then
-                        MSG="[$LOGHEADER] INFO: Adding VIP '$VIP/$PREFIX dev $IFNAME' by Patroni $CB_NAME callback SUCCEEDED"
+                        MSG="[$LOGHEADER] INFO: Adding VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback SUCCEEDED"
                         echo $MSG
                     else
-                        MSG="[$LOGHEADER] ERROR: Adding VIP '$VIP/$PREFIX dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+                        MSG="[$LOGHEADER] ERROR: Adding VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
                         echo $MSG
                     fi
                 else
@@ -309,13 +306,13 @@ else
                 # Remove service_ip if exists
                 #####################################################
                 if [[ ! -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
-                    sudo ip address del $VIP/$PREFIX dev $IFNAME;
+                    sudo ip address del $VIP/$NETID dev $IFNAME;
                     EXITCODE=$?;
                     if [[ $EXITCODE -eq 0 ]]; then
-                        MSG="[$LOGHEADER] INFO: Deleting VIP '$VIP/$PREFIX dev $IFNAME' by Patroni $CB_NAME callback SUCCEEDED"
+                        MSG="[$LOGHEADER] INFO: Deleting VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback SUCCEEDED"
                         echo $MSG
                     else
-                        MSG="[$LOGHEADER] ERROR: Deleting VIP '$VIP/$PREFIX dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
+                        MSG="[$LOGHEADER] ERROR: Deleting VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE."
                         echo $MSG
                     fi
 
