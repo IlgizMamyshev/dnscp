@@ -152,7 +152,6 @@ function in_subnet {
 #####################################################
 readonly LOGHEADER="Patroni Callback"
 MSG="[$LOGHEADER] Called: $0 $*"
-echo $MSG
 
 # Options processing
 while [ -n "$1" ]
@@ -195,6 +194,7 @@ readonly VCompName=$3
 [[ "${VERBOSE}" == "" ]] && VERBOSE=0
 [[ "${DEBUG}" == "" ]] && DEBUG=0
 
+if [[ $VERBOSE -eq 1 ]]; then echo $MSG fi
 if [[ $DEBUG -eq 1 ]]; then
     echo "VIPs=$VIPs";
     echo "VCompName=$VCompName";
@@ -222,7 +222,7 @@ if [[ ! -z $VCompPassword ]]; then
         # Detect DNS zone FQDN
         if [[ "" == "$DNSzoneFQDN" ]]; then
             DNSzoneFQDN=$(sudo net ads info | awk -F": " '{if ($1 == "Realm") print tolower($2)}')
-            if [[ $VERBOSE -eq 1 ]]; then MSG="[$LOGHEADER] INFO: Detected DNS zone FQDN is $DNSzoneFQDN"; echo $MSG; fi
+            if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: Detected DNS zone FQDN is $DNSzoneFQDN"; fi
         fi
     else
         echo "[$LOGHEADER] WARNING: Check prerequisites: Not joined to Active Directory\SAMBA Domain!";
@@ -241,7 +241,7 @@ else
     # Detect DNS Server
     if [[ "" == "$DNSserver" ]] && [[ "OK" == "$JOINED_OK" ]]; then
         DNSserver=$(sudo net ads info | awk -F": " '{if ($1 == "LDAP server name") print $2}') # AD DS logon DC
-        if [[ $VERBOSE -eq 1 ]]; then MSG="[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"; echo $MSG; fi
+        if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"; fi
     fi
 fi
 
@@ -282,8 +282,7 @@ else
     #####################################################
     # VIP
     #####################################################
-    #MSG="[$LOGHEADER] INFO: VIP $VIP is candidate for current network"
-    #echo $MSG
+    if [[ $DEBUG -eq 1 ]]; then echo "[$LOGHEADER] INFO: VIP $VIP is candidate for current network"; fi
     case $CB_NAME in
         on_stop )
             #####################################################
@@ -301,8 +300,7 @@ else
                 # Remove cron task
                 sudo crontab -u $(whoami) -l | grep -v "$0" | sudo crontab -u $(whoami) -
             else
-                MSG="[$LOGHEADER] INFO: VIP $VIP not exist, no action required.";
-                #echo $MSG
+                if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: VIP $VIP not exist, no action required."; fi
             fi
             ;;
         on_start|on_role_change|on_schedule )
