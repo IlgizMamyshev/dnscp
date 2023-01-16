@@ -123,15 +123,15 @@ VIP адреса (IPv4) в разных подсетях пишутся в од�
 ```
 postgresql:
   callbacks:
-    on_start: /etc/patroni/dnscp.sh
-    on_stop: /etc/patroni/dnscp.sh
-    on_role_change: /etc/patroni/dnscp.sh
+    on_start: "/etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- "
+    on_stop: /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- "
+    on_role_change: /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- "
 ```
 
 6. Тестовый запуск:
 Вы можете запускать скрипт, самостоятельно вручную, в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
-sudo /etc/patroni/dnscp.sh on_role_change master patroniclustername
+sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- " on_schedule registerdns pgsql
 ```
 Скрипт принимает на вход 3 параметра.  
 Подробнее о работе скрипта смотрите в комментариях к коду в файле [dnscp.sh](./dnscp.sh).  
