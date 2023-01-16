@@ -222,7 +222,7 @@ if [[ ! -z $VCompPassword ]]; then
         # Detect DNS zone FQDN
         if [[ "" == "$DNSzoneFQDN" ]]; then
             DNSzoneFQDN=$(sudo net ads info | awk -F": " '{if ($1 == "Realm") print tolower($2)}')
-            if [[ $VERBOSE -eq 1 ]]; then MSG="[$LOGHEADER] INFO: Detected DNS zone FQDN is $DNSzoneFQDN"; echo $MSG; fi;
+            if [[ $VERBOSE -eq 1 ]]; then MSG="[$LOGHEADER] INFO: Detected DNS zone FQDN is $DNSzoneFQDN"; echo $MSG; fi
         fi
     else
         echo "[$LOGHEADER] WARNING: Check prerequisites: Not joined to Active Directory\SAMBA Domain!";
@@ -241,7 +241,7 @@ else
     # Detect DNS Server
     if [[ "" == "$DNSserver" ]] && [[ "OK" == "$JOINED_OK" ]]; then
         DNSserver=$(sudo net ads info | awk -F": " '{if ($1 == "LDAP server name") print $2}') # AD DS logon DC
-        if [[ $VERBOSE -eq 1 ]]; then MSG="[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"; echo $MSG; fi;
+        if [[ $VERBOSE -eq 1 ]]; then MSG="[$LOGHEADER] INFO: Detected DNS Server is $DNSserver"; echo $MSG; fi
     fi
 fi
 
@@ -319,7 +319,7 @@ else
                         echo "[$LOGHEADER] ERROR: Adding VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE.";
                     fi
                 else
-                    if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: VIP $VIP already present, no action required."; fi;
+                    if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: VIP $VIP already present, no action required."; fi
                 fi
             fi
 
@@ -339,7 +339,7 @@ else
                     # Remove cron task
                     sudo crontab -u $(whoami) -l | grep -v "$0" | sudo crontab -u $(whoami) -
                 else
-                    if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: VIP $VIP not exist, no action required.";
+                    if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: VIP $VIP not exist, no action required."; fi
                 fi
             fi
 
@@ -351,7 +351,7 @@ else
                 if [[ $VERBOSE -eq 1 ]]; then
                     echo "[$LOGHEADER] INFO: DNS zone FQDN is $DNSzoneFQDN";
                     echo "[$LOGHEADER] INFO: DNS Server is $DNSserver";
-                fi;
+                fi
 
                 # Authentication by $VCompName Computer account
                 KINITEXITCODE=-1
@@ -389,7 +389,8 @@ else
             sudo crontab -u $(whoami) -l | grep -v "$0" | sudo crontab -u $(whoami) -
             if [[ -z $(ip address | awk '/'$VIP'/{print $0}') ]]; then
                 # service_ip not exists
-                if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: service_ip not exists.";
+                if [[ $VERBOSE -eq 1 ]]; then
+                    echo "[$LOGHEADER] INFO: service_ip not exists.";
                     echo "[$LOGHEADER] INFO: 'Dynamic DNS Update' cron task for $(whoami) user removed.";
                 fi
             else
