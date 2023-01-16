@@ -131,7 +131,7 @@ postgresql:
 6. Тестовый запуск:
 Вы можете запускать скрипт, самостоятельно вручную, в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
-sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- " on_schedule registerdns pgsql
+sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- " on_change_role master pgsql
 ```
 Скрипт принимает на вход 3 параметра.  
 Подробнее о работе скрипта смотрите в комментариях к коду в файле [dnscp.sh](./dnscp.sh).  
