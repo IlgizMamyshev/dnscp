@@ -7,7 +7,7 @@
 
 readonly productname="DNS Connection Point for Patroni";
 readonly giturl="https://github.com/IlgizMamyshev/dnscp";
-readonly version="18012023";
+readonly version="16032023";
 
 ### Script for Patroni clusters
 # Script Features:
@@ -51,6 +51,7 @@ readonly version="18012023";
 #   * Microsoft DNS Server and DNS-zone with allow non-secure DNS update.
 # Common:
 #   * Install nsupdate utility: sudo apt-get install dnsutils
+#   * Install arping utility: sudo apt-get install iputils-arping
 
 #####################################################
 # Set variable defaults
@@ -228,6 +229,15 @@ if [[ ! -z $VCompPassword ]]; then
 fi
 
 ## package is installed?
+REQUIRED_PKG="iputils-arping"
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
+if [[ "" == "$PKG_OK" ]]; then
+    echo "[$LOGHEADER] WARNING: Check prerequisites: No $REQUIRED_PKG.";
+    PKG_OK=""
+else
+    PKG_OK=""
+fi
+
 REQUIRED_PKG="dnsutils"
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG|grep "install ok installed")
 if [[ "" == "$PKG_OK" ]]; then
@@ -312,6 +322,32 @@ else
                         echo "[$LOGHEADER] INFO: Adding VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback SUCCEEDED";
                     else
                         echo "[$LOGHEADER] ERROR: Adding VIP '$VIP/$NETID dev $IFNAME' by Patroni $CB_NAME callback is FAILED with error code $EXITCODE.";
+                    fi
+                    
+                    #####################################################
+                    # Sends a gratuitous ARP request and reply
+                    #  * While RFC 2002 does not say whether a gratuitous ARP request or reply is preferred
+                    #     to update ones neighbours' MAC tables, the Wireshark Wiki recommends sending both.
+                    #     https://wiki.wireshark.org/Gratuitous_ARP
+                    #  * This site also recommends sending a reply, as requests might be ignored by some hardware:
+                    #     https://support.citrix.com/article/CTX112701
+                    #####################################################
+                    # ARP REQUEST packets
+                    sudo arping -c 4 -f -U -I $IFNAME -s $VIP $VIP
+                    EXITCODE=$?;
+                    if [[ $EXITCODE -eq 0 ]]; then
+                        echo "[$LOGHEADER] INFO: Gratuitous ARP request SUCCEEDED";
+                    else
+                        echo "[$LOGHEADER] ERROR: Gratuitous ARP request package is malformed: $EXITCODE.";
+                    fi
+                    
+                    # ARP REPLY packets
+                    sudo arping -c 4 -f -A -I $IFNAME -s $VIP $VIP
+                    EXITCODE=$?;
+                    if [[ $EXITCODE -eq 0 ]]; then
+                        echo "[$LOGHEADER] INFO: Gratuitous ARP reply SUCCEEDED";
+                    else
+                        echo "[$LOGHEADER] ERROR: Gratuitous ARP reply package is malformed: $EXITCODE.";
                     fi
                 else
                     if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: VIP $VIP already present, no action required."; fi
