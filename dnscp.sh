@@ -7,7 +7,7 @@
 
 readonly productname="DNS Connection Point for Patroni";
 readonly giturl="https://github.com/IlgizMamyshev/dnscp";
-readonly version="11062023";
+readonly version="18062023";
 
 ### Script for Patroni clusters
 # Script Features:
