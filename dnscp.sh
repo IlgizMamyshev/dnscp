@@ -357,7 +357,7 @@ else
             fi
             ;;
         on_start|on_role_change|on_schedule )
-            if [[ $ROLE == 'master' ]]; then
+            if [[ $ROLE == 'master' ]] || [[ $ROLE == 'primary' ]]; then
                 #####################################################
                 # Add service_ip if not exists
                 #####################################################
@@ -420,7 +420,7 @@ else
                 fi
             fi
 
-            if [[ $ROLE == 'master' ]] || ( [[ $ROLE == 'registerdns' ]] && [[ "" != "$(ip address | awk '/'$VIP'/{print $0}')" ]] ); then
+            if ([[ $ROLE == 'master' ]] || [[ $ROLE == 'primary' ]]) || ( [[ $ROLE == 'registerdns' ]] && [[ "" != "$(ip address | awk '/'$VIP'/{print $0}')" ]] ); then
             #####################################################
             # Register DNS
             #####################################################
