@@ -11,8 +11,8 @@ DNSCP использует функцию обратных вызовов ([call
 
 ###### Возможности:
 * Управляет VIP-адресом на сетевом интерфейсе.  
-    + Добавляет виртуальный IP-адрес на сетевой интерфейс (использует ```ip addr add```), если Patroni запускается в роли Лидера (master).  
-    + Удаляет виртуальный IP-адрес с сетевого интерфейса (использует ```ip addr delete```), если Patroni останавливается или переключается на роль не-Лидера.  
+    + Добавляет виртуальный IP-адрес на сетевой интерфейс (использует ```ip addr add```), если Patroni запускается в роли `primary`.  
+    + Удаляет виртуальный IP-адрес с сетевого интерфейса (использует ```ip addr delete```), если Patroni останавливается или переключается на роль не `primary`.  
     + Поддерживается геораспределённый кластер (несколько VIP-адресов).  
 * Управляет DNS-записью кластеризованного экземпляра PostgreSQL.  
     + Регистрирует\Обновляет DNS-запись типа A для клиентского доступа к экземпляру PostgreSQL (использует ```dnsutils```), запущенному в роли Мастера (Patroni на таком узле СУБД - в роли Лидера).  
@@ -31,9 +31,12 @@ DNSCP использует функцию обратных вызовов ([call
 - **Astra Linux**: Common Edition (основан на Debian 9), Spetial Edition (основан на Debian 10)
 - **Red Hat Enterprise Linux**: 7.x и выше (протестировано на RHEL 7.9)
 
+#### Patroni:
+- **Patroni**: 2, [3](https://github.com/zalando/patroni/blob/master/docs/releases.rst#version-300)
+
 #### Службы каталога:
 - **Microsoft Active Directory**: :white_check_mark:
-- **Astra Linux Directory**: ожидается..
+- **Astra Linux [Directory](https://astralinux.ru/products/ald-pro)**: ожидается..
 - **РЕД СОФТ Samba DC**: ожидается..
 
 ## Требования
@@ -43,8 +46,7 @@ DNSCP использует функцию обратных вызовов ([call
 
 Обновите операционные системы узлов кластера перед развёртыванием.
 
-Узлы Patroni должны быть членами домена Microsoft Active Directory, если требуется аутентифицированный доступ на запись в DNS-зону.  
-Поддержка домена Astra Linux Directory ([ALDPro](https://astralinux.ru/products/ald-pro)) в проработке..
+Если требуется аутентифицированный доступ для регистрации динамической DNS-записи, узлы Patroni должны быть членами домена Microsoft Active Directory.  
 
 - **PostgreSQL**: 
 
@@ -88,7 +90,7 @@ sudo apt-get install dnsutils
 sudo yum install bind-utils
 ```
 
-2. Если требуется аутентифицированный доступ на запись в DNS-зону, - создать в Active Directory учётную запись Компьютера:
+2. Если требуется аутентифицированный доступ для регистрации динамической DNS-записи, - создать в Active Directory учётную запись Компьютера:
 ```PowerShell
 New-ADComputer pgsql
 ```
@@ -150,7 +152,7 @@ postgres  ALL=(ALL)       NOPASSWD: /sbin/net ads *, /sbin/ip address *, /bin/cr
 
 Вы можете запускать скрипт вручную в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
-sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- " on_role_change master pgsql
+sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- " on_role_change primary pgsql
 ```
 Подробнее о работе скрипта смотрите в комментариях к коду в файле [dnscp.sh](./dnscp.sh).  
 [Подробнее о Patroni callback](https://patroni.readthedocs.io/en/latest/SETTINGS.html)
