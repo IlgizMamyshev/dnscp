@@ -84,7 +84,7 @@ sudo apt-get install astra-ad-sssd-client && astra-ad-sssd-client -d example.ru 
 
 Для Debian и Astra Linux: 
 ```
-sudo apt-get install dnsutils
+sudo apt-get install dnsutils, iputils-arping
 ```
 Для Red Hat Enterprise Linux:
 ```
