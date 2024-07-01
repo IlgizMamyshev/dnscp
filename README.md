@@ -28,7 +28,7 @@ DNSCP использует функцию обратных вызовов ([call
 
 #### Операционные Системы:
 - **Debian**: 9, 10, 11
-- **Astra Linux**: Common Edition (основан на Debian 9), Spetial Edition (основан на Debian 10)
+- **Astra Linux**: Common Edition 2.12 (основан на Debian 9), Spetial Edition 1.7 (основан на Debian 10)
 - **Red Hat Enterprise Linux**: 7.x и выше (протестировано на RHEL 7.9)
 
 #### Patroni:
@@ -36,8 +36,6 @@ DNSCP использует функцию обратных вызовов ([call
 
 #### Службы каталога:
 - **Microsoft Active Directory**: :white_check_mark:
-- **Astra Linux [Directory](https://astralinux.ru/products/ald-pro)**: ожидается..
-- **РЕД СОФТ Samba DC**: ожидается..
 
 ## Требования
 Скрипт требует привилегий root или sudo и запускается сервисом Patroni.
@@ -83,7 +81,7 @@ sudo apt-get install astra-ad-sssd-client && astra-ad-sssd-client -d example.ru 
 
 Для Debian и Astra Linux: 
 ```
-sudo apt-get install dnsutils
+sudo apt-get install dnsutils, iputils-arping
 ```
 Для Red Hat Enterprise Linux:
 ```
@@ -152,7 +150,7 @@ postgres  ALL=(ALL)       NOPASSWD: /sbin/net ads *, /sbin/ip address *, /bin/cr
 
 Вы можете запускать скрипт вручную в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
-sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- " on_role_change primary pgsql
+sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.secret' -- on_role_change primary pgsql
 ```
 Подробнее о работе скрипта смотрите в комментариях к коду в файле [dnscp.sh](./dnscp.sh).  
 [Подробнее о Patroni callback](https://patroni.readthedocs.io/en/latest/SETTINGS.html)
