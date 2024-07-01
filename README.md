@@ -28,8 +28,7 @@ DNSCP использует функцию обратных вызовов ([call
 
 #### Операционные Системы:
 - **Debian**: 9, 10, 11
-- **Astra Linux**: Common Edition (основан на Debian 9), Spetial Edition (основан на Debian 10)
-- **РЕД ОС**: 8
+- **Astra Linux**: Common Edition 2.12 (основан на Debian 9), Spetial Edition 1.7 (основан на Debian 10)
 - **Red Hat Enterprise Linux**: 7.x и выше (протестировано на RHEL 7.9)
 
 #### Patroni:
@@ -37,8 +36,6 @@ DNSCP использует функцию обратных вызовов ([call
 
 #### Службы каталога:
 - **Microsoft Active Directory**: :white_check_mark:
-- **Astra Linux [Directory](https://astralinux.ru/products/ald-pro)**: ожидается..
-- **РЕД СОФТ Samba DC**: ожидается..
 
 ## Требования
 Скрипт требует привилегий root или sudo и запускается сервисом Patroni.
