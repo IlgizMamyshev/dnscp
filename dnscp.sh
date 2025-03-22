@@ -7,7 +7,7 @@
 
 readonly productname="DNS Connection Point for Patroni";
 readonly giturl="https://github.com/IlgizMamyshev/dnscp";
-readonly version="23062024";
+readonly version="22032025";
 
 ### Script for Patroni clusters
 # Script Features:
@@ -69,7 +69,7 @@ DNSserver="";                                       # empty for automatically de
 TTL=1200;                                           # TTL=1200 - default. Use for example TTL=30 for multi-site clusters.
 
 #####################################################
-# Funtions
+# Functions
 #####################################################
 function usage() {
 echo "Usage:";
@@ -443,20 +443,24 @@ else
                 if [[ ! -z $VCompPassword ]] && [[ $KINITEXITCODE -eq 0 ]]; then
                     # Active Directory\SAMBA authentication under Computer Account is success.
                     NSUPDATERESULT=$( (echo "server $DNSserver"; echo "zone $DNSzoneFQDN"; echo "update delete $VCompNameFQDN A"; echo send; echo "update add $VCompNameFQDN $TTL A $VIP"; echo send) | nsupdate -g -v 2>&1)
-                    EXITMSG=$(echo "$NSUPDATERESULT" | awk -F": " '{if ($1~/failed/) print $0}');
-                    if [[ "" == "$EXITMSG" ]]; then
+                    EXITCODE=$?;
+                    if [[ $EXITCODE -eq 0 ]]; then
                         echo "[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED";
+                        if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] ERROR: nsupdate result message: $NSUPDATERESULT"; fi
                     else
-                        echo "[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error: $EXITMSG.";
+                        echo "[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error.";
+                        echo "[$LOGHEADER] ERROR: nsupdate result message: $NSUPDATERESULT";
                     fi
                 else
                     # Active Directory\SAMBA authentication is failed. Try to non-secure DNS-update.
                     NSUPDATERESULT=$( (echo "server $DNSserver"; echo "zone $DNSzoneFQDN"; echo "update delete $VCompNameFQDN A"; echo send; echo "update add $VCompNameFQDN $TTL A $VIP"; echo send) | nsupdate -v 2>&1)
-                    EXITMSG=$(echo "$NSUPDATERESULT" | awk -F": " '{if ($1~/failed/) print $0}');
-                    if [[ "" == "$EXITMSG" ]]; then
+                    EXITCODE=$?;
+                    if [[ $EXITCODE -eq 0 ]]; then
                         echo "[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update SUCCEEDED";
+                        if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] ERROR: nsupdate result message: $NSUPDATERESULT"; fi
                     else
-                        echo "[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update FAILED with error: $EXITMSG.";
+                        echo "[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with non-secure DNS update FAILED with error.";
+                        echo "[$LOGHEADER] ERROR: nsupdate result message: $NSUPDATERESULT";
                     fi
                 fi
             fi
