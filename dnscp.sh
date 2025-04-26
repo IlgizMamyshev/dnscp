@@ -7,7 +7,7 @@
 
 readonly productname="DNS Connection Point for Patroni";
 readonly giturl="https://github.com/IlgizMamyshev/dnscp";
-readonly version="22032025";
+readonly version="26042025";
 
 ### Script for Patroni clusters
 # Script Features:
@@ -238,8 +238,10 @@ fi
 ## Active Directory\SAMBA Domain joined?
 JOINED_OK=""
 if [[ ! -z $VCompPassword ]]; then
-    JOINED_OK=$(sudo net ads testjoin | awk '{print $NF}')
-    if [[ "OK" == "$JOINED_OK" ]]; then
+    sudo astra-ad-sssd-client -i;
+    EXITCODE=$?;
+    if [[ $EXITCODE -eq 0 ]]; then
+        JOINED_OK="OK";
         # Detect DNS zone FQDN
         if [[ "" == "$DNSzoneFQDN" ]]; then
             DNSzoneFQDN=$(sudo net ads info | awk -F": " '{if ($1 == "Realm") print tolower($2)}')
