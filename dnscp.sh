@@ -241,6 +241,7 @@ if [[ ! -z $VCompPassword ]]; then
     sudo astra-ad-sssd-client -i;
     EXITCODE=$?;
     if [[ $EXITCODE -eq 0 ]]; then
+        JOINED_OK="OK";
         # Detect DNS zone FQDN
         if [[ "" == "$DNSzoneFQDN" ]]; then
             DNSzoneFQDN=$(sudo net ads info | awk -F": " '{if ($1 == "Realm") print tolower($2)}')
