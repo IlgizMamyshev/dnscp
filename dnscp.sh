@@ -7,7 +7,7 @@
 
 readonly productname="DNS Connection Point for Patroni";
 readonly giturl="https://github.com/IlgizMamyshev/dnscp";
-readonly version="26042025";
+readonly version="26052025";
 
 ### Script for Patroni clusters
 # Script Features:
@@ -57,6 +57,7 @@ readonly version="26042025";
 #   * Install nsupdate utility for Debian: sudo apt-get install dnsutils
 #   * Install nsupdate utility for Red Hat: sudo yum install bind-utils
 #   * Install arping utility: sudo apt-get install iputils-arping
+#   * grant privileges - add Patroni service user to crontab group: sudo usermod -a -G crontab postgres
 
 #####################################################
 # Set variable defaults
@@ -448,7 +449,7 @@ else
                     EXITCODE=$?;
                     if [[ $EXITCODE -eq 0 ]]; then
                         echo "[$LOGHEADER] INFO: Registering $VCompNameFQDN on $DNSserver with secure DNS update SUCCEEDED";
-                        if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] ERROR: nsupdate result message: $NSUPDATERESULT"; fi
+                        if [[ $VERBOSE -eq 1 ]]; then echo "[$LOGHEADER] INFO: nsupdate result message: $NSUPDATERESULT"; fi
                     else
                         echo "[$LOGHEADER] ERROR: Registering $VCompNameFQDN on $DNSserver with secure DNS update FAILED with error.";
                         echo "[$LOGHEADER] ERROR: nsupdate result message: $NSUPDATERESULT";
