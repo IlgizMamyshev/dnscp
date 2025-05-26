@@ -145,6 +145,10 @@ postgres  ALL=(ALL)       NOPASSWD: ALL
 ```
 postgres  ALL=(ALL)       NOPASSWD: /sbin/net ads *, /sbin/ip address *, /bin/crontab, /sbin/arping
 ```
+Скрипт выполняется в контексте учетной записи пользователя, поумолчанию postgres, данному пользователю требуются привилегии создания задания Планировщика Заданий crontab, для выдачи соответствующих привилегий добавьте пользователя в группу crontab:
+```
+sudo usermod -a -G crontab postgres
+```
 
 7. Тестовый запуск:
 
