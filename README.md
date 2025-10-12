@@ -149,8 +149,36 @@ postgres  ALL=(ALL)       NOPASSWD: /sbin/net ads *, /sbin/ip address *, /bin/cr
 ```
 sudo usermod -a -G crontab postgres
 ```
+7. Настройка протоколирования.
+Создать каталог для размещения журнала:
+```
+mkdir /var/log/archive_partition
+```
+ 
+Настроить права доступа для каталога журнала:
+```
+sudo chown archive_partition_user:archive_partition_user /var/log/archive_partition
+```
+ 
+Настройка параметров ротации журнала:
+```
+nano /etc/logrotate.d/archive_partition
+/var/log/archive_partition/*log {
+    daily
+    missingok
+    notifempty
+    rotate 7
+    compress
+    su archive_partition_user archive_partition_user
+    delaycompress
+}
+```
+Проверка настройки logrotate:
+```
+logrotate -d /etc/logrotate.d/archive_partition
+```
 
-7. Тестовый запуск:
+9. Тестовый запуск:
 
 Вы можете запускать скрипт вручную в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
@@ -170,3 +198,4 @@ sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.s
 
 ## Обратная связь, отчеты об ошибках, запросы и т.п.
 [Добро пожаловать](https://github.com/IlgizMamyshev/dnscp/issues)!
+
