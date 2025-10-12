@@ -153,28 +153,28 @@ sudo usermod -a -G crontab postgres
 
 Создать каталог для размещения журнала:
 ```
-mkdir /var/log/archive_partition
+mkdir /var/log/dnscp
 ```
 Настроить права доступа для каталога журнала:
 ```
-sudo chown archive_partition_user:archive_partition_user /var/log/archive_partition
+sudo chown postgres:postgres /var/log/dnscp
 ```
 Настройка параметров ротации журнала:
 ```
-nano /etc/logrotate.d/archive_partition
-/var/log/archive_partition/*log {
-    daily
+nano /etc/logrotate.d/dnscp
+/var/log/dnscp/*log {
+    weekly
     missingok
     notifempty
     rotate 7
     compress
-    su archive_partition_user archive_partition_user
+    su postgres postgres
     delaycompress
 }
 ```
 Проверка настройки logrotate:
 ```
-logrotate -d /etc/logrotate.d/archive_partition
+logrotate -d /etc/logrotate.d/dnscp
 ```
 
 9. Тестовый запуск:
@@ -197,5 +197,6 @@ sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.s
 
 ## Обратная связь, отчеты об ошибках, запросы и т.п.
 [Добро пожаловать](https://github.com/IlgizMamyshev/dnscp/issues)!
+
 
 
