@@ -177,7 +177,7 @@ nano /etc/logrotate.d/dnscp
 logrotate -d /etc/logrotate.d/dnscp
 ```
 
-9. Тестовый запуск:
+8. Тестовый запуск:
 
 Вы можете запускать скрипт вручную в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
@@ -197,6 +197,7 @@ sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.s
 
 ## Обратная связь, отчеты об ошибках, запросы и т.п.
 [Добро пожаловать](https://github.com/IlgizMamyshev/dnscp/issues)!
+
 
 
 
