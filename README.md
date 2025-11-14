@@ -145,8 +145,39 @@ postgres  ALL=(ALL)       NOPASSWD: ALL
 ```
 postgres  ALL=(ALL)       NOPASSWD: /sbin/net ads *, /sbin/ip address *, /bin/crontab, /sbin/arping
 ```
+Скрипт выполняется в контексте учетной записи пользователя, поумолчанию postgres, данному пользователю требуются привилегии создания задания Планировщика Заданий crontab, для выдачи соответствующих привилегий добавьте пользователя в группу crontab:
+```
+sudo usermod -a -G crontab postgres
+```
+7. Настройка протоколирования.
 
-7. Тестовый запуск:
+Создать каталог для размещения журнала:
+```
+mkdir /var/log/dnscp
+```
+Настроить права доступа для каталога журнала:
+```
+sudo chown postgres:postgres /var/log/dnscp
+```
+Настройка параметров ротации журнала:
+```
+nano /etc/logrotate.d/dnscp
+/var/log/dnscp/*log {
+    weekly
+    missingok
+    notifempty
+    rotate 7
+    compress
+    su postgres postgres
+    delaycompress
+}
+```
+Проверка настройки logrotate:
+```
+logrotate -d /etc/logrotate.d/dnscp
+```
+
+8. Тестовый запуск:
 
 Вы можете запускать скрипт вручную в тестовых целях, имитируя запуск от Patroni следующей командой:
 ```
@@ -166,3 +197,7 @@ sudo /etc/patroni/dnscp.sh -vips '192.168.10.100' -pwdfile '/etc/patroni/dnscp.s
 
 ## Обратная связь, отчеты об ошибках, запросы и т.п.
 [Добро пожаловать](https://github.com/IlgizMamyshev/dnscp/issues)!
+
+
+
+
